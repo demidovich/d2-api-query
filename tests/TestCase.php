@@ -3,7 +3,6 @@
 namespace Tests;
 
 use Illuminate\Database\Capsule\Manager as Capsule;
-use Illuminate\Database\ConnectionInterface;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 
 class TestCase extends BaseTestCase
@@ -28,8 +27,60 @@ class TestCase extends BaseTestCase
          $capsule->setAsGlobal();
     }
 
-    protected function db(): ConnectionInterface
+    protected function query(string $query, array $input = []): array
     {
-        return Capsule::connection("default");
+        $results = (new $query($input))->results();
+
+        return $results->toArray();
     }
+
+    protected function queryItems(string $query, array $input = []): array
+    {
+        $results = $this->query($query, $input);
+
+        return isset($results['data']) ? $results['data'] : null;
+    }
+
+    protected function queryFirstItem(string $query, array $input = []): ?object
+    {
+        $results = $this->queryItems($query, $input);
+
+        return isset($results['0']) ? $results[0] : null;
+    }
+
+    // /**
+    //  * @param string $query
+    //  * @param array $input
+    //  * @return Collection|Paginator
+    //  */
+    // protected function query(string $query, array $input = [])
+    // {
+    //     $results = (new $query($input))->results();
+
+    //     return $results;
+    // }
+
+    // /**
+    //  * @param string $query
+    //  * @param array $input
+    //  * @return Collection
+    //  */
+    // protected function queryItems(string $query, array $input = [])
+    // {
+    //     $results = $this->query($query, $input);
+
+    //     return $results->items() ? $results->items() : $results;
+    // }
+
+    // /**
+    //  * @param string $query
+    //  * @param array $input
+    //  * @return object|null
+    //  */
+    // protected function queryFirstItem(string $query, array $input = [])
+    // {
+    //     $results = $this->queryItems($query, $input);
+
+    //     return isset($results['0']) ? $results[0] : null;
+    // }
 }

@@ -8,7 +8,7 @@ create table person (
     last_name text,
     meta jsonb,
     city_id integer,
-    created_at timestamp default CURRENT_TIMESTAMP,
+    created_at timestamp,
     updated_at timestamp
 );
 
@@ -24,33 +24,29 @@ create table horse (
 );
 
 insert into city (
-    id,
+    id, 
     name
-) values (
-    1,
-    'Winterfell'
-);
+) values 
+    (1, 'Winterfell');
 
 insert into person (
-    id,
-    first_name,
-    last_name,
-    meta,
-    city_id
-) values (
-    1,
-    'John',
-    'Snow',
-    '{"phones":["71234567890"]}',
-    1
-);
+    id, 
+    first_name, 
+    last_name, 
+    meta, 
+    city_id, 
+    created_at
+) values 
+    (1, 'Jon',      'Snow',      '{"phones":["11111111111"]}', 1, '2021-01-01 00:00:01'),
+    (2, 'Jaime',    'Lannister', '{"phones":["22222222222"]}', 1, '2021-01-02 00:00:01'),
+    (3, 'Sansa',    'Stark',     '{"phones":["33333333333"]}', 1, '2021-01-03 00:00:01'),
+    (4, 'Arya',     'Stark',     '{"phones":["44444444444"]}', 1, '2021-01-04 00:00:01'),
+    (5, 'Daenerys', 'Targaryen', '{"phones":["55555555555"]}', 1, '2021-01-05 00:00:01');
 
 insert into horse (
     id,
     person_id,
     name
-) values (
-    1,
-    1,
-    'Snowball'
-);
+) values 
+    (1, 1, 'Snowball'),
+    (2, 2, 'Blackball');

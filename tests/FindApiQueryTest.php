@@ -6,12 +6,10 @@ use Tests\Mock\FindPersonQuery;
 
 class FindApiQueryTest extends TestCase
 {
-    public function test_find()
+    public function test_all_fields()
     {
-        $results = (new FindPersonQuery([]))->results();
+        $results = $this->queryItems(FindPersonQuery::class);
 
-        dd($results->toArray());
-
-        $this->assertTrue(true);
+        $this->assertNotEmpty(count($results) > 0);
     }
 }

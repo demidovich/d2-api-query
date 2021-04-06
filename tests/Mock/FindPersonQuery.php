@@ -11,6 +11,7 @@ class FindPersonQuery extends BaseQuery
     protected array $allowedFields = [
         "id",
         "first_name",
+        "last_name",
     ];
 
     protected array $rules = [
