@@ -1,8 +1,6 @@
 <?php
 
-namespace Tests\Unit\Shared\ApiQueryLight;
-
-use PHPUnit\Framework\TestCase;
+namespace Tests;
 
 class ExampleTest extends TestCase
 {

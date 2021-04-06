@@ -4,12 +4,14 @@ namespace Tests;
 
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Database\ConnectionInterface;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\TestCase as BaseTestCase;
 
-class UnitTestCase extends TestCase
+class TestCase extends BaseTestCase
 {
     protected function setUp(): void
     {
+        parent::setUp();
+
         $capsule = new Capsule;
 
         $capsule->addConnection(
