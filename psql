@@ -4,14 +4,11 @@ cd "$(dirname "$0")"
 
 # ./psql DATABASE
 if [ -t 0 ]; then
-
     docker-compose -f docker-compose.yml exec postgres psql $@
 
 # ./psql DATABASE < cat FILE
 else
-
     CONTAINER_ID=$(docker-compose -f docker-compose.yml ps -q postgres)
     docker exec -i $CONTAINER_ID psql $@ </dev/stdin
-
 fi
 

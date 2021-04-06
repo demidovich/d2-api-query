@@ -4,7 +4,8 @@
     "type": "library",
     "keywords": [
         "php",
-        "api query"
+        "api query",
+        "laravel query builder"
     ],
     "autoload": {
         "psr-4": {
