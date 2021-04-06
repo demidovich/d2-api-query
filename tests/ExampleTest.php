@@ -1,15 +1,13 @@
 <?php
 
-namespace Tests;
+namespace Tests\Unit\Shared\ApiQueryLight;
 
-use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\TestCase;
 
-class ExampleTest extends UnitTestCase
+class ExampleTest extends TestCase
 {
     public function test_command()
     {
-        dd($this->db()->table("person")->get());
-
         $this->assertTrue(true);
     }
 }
