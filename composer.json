@@ -1,0 +1,30 @@
+{
+    "name": "demidovich/d2-api-query",
+    "license": "MIT",
+    "type": "library",
+    "keywords": [
+        "php",
+        "api query"
+    ],
+    "autoload": {
+        "psr-4": {
+            "D2\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "php": ">=7.2",
+        "illuminate/database": "^8.35"
+    },
+    "require-dev": {
+        "phpunit/phpunit": ">=8.0",
+        "squizlabs/php_codesniffer": "^3.5",
+        "symfony/var-dumper": "^5.1"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

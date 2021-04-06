@@ -1,0 +1,13 @@
+#!/bin/bash
+
+cd "$(dirname "$0")"
+
+_path=$@
+
+# Меняем ./php на /app
+
+if [ ! -z "$_path" ]; then
+    _path="/app${_path#./php}"
+fi
+
+docker-compose -f docker-compose.yml exec fpm /app/vendor/bin/phpunit $_path
