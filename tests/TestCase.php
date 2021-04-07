@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Illuminate\Database\Capsule\Manager as Capsule;
+use Illuminate\Database\Connection;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 
 class TestCase extends BaseTestCase
@@ -27,6 +28,11 @@ class TestCase extends BaseTestCase
          $capsule->setAsGlobal();
     }
 
+    protected function db(): Connection
+    {
+        return Capsule::connection("default");
+    }
+
     protected function query(string $query, array $input = []): array
     {
         $results = (new $query($input))->results();
@@ -38,14 +44,14 @@ class TestCase extends BaseTestCase
     {
         $results = $this->query($query, $input);
 
-        return isset($results['data']) ? $results['data'] : null;
+        return isset($results['data']) ? $results['data'] : $results;
     }
 
-    protected function queryFirstItem(string $query, array $input = []): ?object
+    protected function queryFirstItem(string $query, array $input = []): ?array
     {
         $results = $this->queryItems($query, $input);
 
-        return isset($results['0']) ? $results[0] : null;
+        return isset($results['0']) ? (array) $results[0] : null;
     }
 
     // /**
