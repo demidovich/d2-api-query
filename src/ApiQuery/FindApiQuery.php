@@ -57,6 +57,20 @@ abstract class FindApiQuery
 
     protected abstract function validator(array $input, array $rules): Validator;
 
+    public static function fromArray(array $input, ...$params): self
+    {
+        $class = get_called_class();
+
+        return new $class($input, $params);
+    }
+
+    // public static function fromRequest(Request $request): self
+    // {
+    //     $class = get_called_class();
+
+    //     return new $class($request);
+    // }
+
     /**
      * Если в реализации поиска существует метод rules()
      * данные будут получены из него. Иначе будет использоваться
@@ -75,20 +89,6 @@ abstract class FindApiQuery
 
         return $rules;
     }
-
-    public static function fromArray(array $input, ...$params): self
-    {
-        $class = get_called_class();
-
-        return new $class($input, $params);
-    }
-
-    // public static function fromRequest(Request $request): self
-    // {
-    //     $class = get_called_class();
-
-    //     return new $class($request);
-    // }
 
     /**
      * @return Collection|Paginator
