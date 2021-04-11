@@ -4,33 +4,37 @@ namespace D2\ApiQuery;
 
 class Fields
 {
-    private array $fields = [];
-    private array $dependencies = [];
+    private array $allowedFields = [];
+    private array $enabledFields = [];
+    private array $dependencies  = [];
 
-    public function __construct(array $fields, array $dependencies)
+    public function __construct(array $fields)
     {
         foreach ($fields as $k => $v) {
             if (is_int($k)) {
-                $field    = $v;
-                $describe = null;
+                $field   = $v;
+                $options = null;
             } else {
-                $field    = $k;
-                $describe = $v;
+                $field   = $k;
+                $options = $v;
             }
-            $this->addField($field, $describe);
-        }
-
-        foreach ($dependencies as $field => $d) {
-
+            $this->add($field, $options);
         }
     }
 
-    private function addField(string $field, ?string $describe = null): void
+    private function add(string $field, ?string $options = null): void
     {
 
     }
 
-    private function addDependency(string $field, array $dependencyFields): void
+    public function addDependency(string $field): void
+    {
+        if (! in_array($field, $this->dependencies)) {
+            $this->dependencies[] = $field;
+        }
+    }
+
+    public function hidden(): array
     {
 
     }
@@ -43,5 +47,22 @@ class Fields
     public function formatResults(object $row): object
     {
 
+    }
+
+    public function allowed(string $field): bool
+    {
+        return array_key_exists($field, $this->allowedFields);
+    }
+
+    public function enable(string $field): void
+    {
+        if (! in_array($field, $this->enabledFields)) {
+            $this->enabledFields = $field;
+        }
+    }
+
+    public function enableAll(): void
+    {
+        $this->enabledFields = array_keys($this->allowedFields);
     }
 }

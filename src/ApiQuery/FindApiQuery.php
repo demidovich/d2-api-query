@@ -25,11 +25,12 @@ abstract class FindApiQuery
     protected  int     $maxCount = 1000;
     protected  int     $perPage  = 25;
 
-    private    Builder $sql;
-    private    array   $input = [];
-    private    array   $requestedFields = [];
-    private    array   $requestedAppends = [];
-    private    array   $requestedRelations = [];
+    private    Builder    $sql;
+    private    Fields     $fields;
+    private    Relations  $relations;
+    private    array      $input = [];
+    private    array      $requestedFields = [];
+    private    array      $requestedAppends = [];
 
     public function __construct(array $input, ...$params)
     {
@@ -41,7 +42,7 @@ abstract class FindApiQuery
             'sort.*' => 'in:asc,desc',
             'count'  => 'nullable|int',
             'page'   => 'nullable|int',
-        ] + $this->queryRealisationRules();
+        ] + $this->rules();
 
         $validator = $this->validator($input, $rules);
 
@@ -49,10 +50,13 @@ abstract class FindApiQuery
             throw new ValidationException($validator);
         }
 
-        $this->input = $validator->validated();
-        $this->sql   = Capsule::connection($this->sqlConnection)->table($this->table)->select();
+        $this->input     = $validator->validated();
+        $this->sql       = Capsule::connection($this->sqlConnection)->table($this->table)->select();
+        $this->fields    = new Fields($this->allowedFields);
+        $this->relations = new Relations($this->allowedRelations);
 
-        $this->parseInput();
+        $this->enableFields($this->input, $this->fields);
+        $this->enableRelations($this->input, $this->relations);
     }
 
     protected abstract function validator(array $input, array $rules): Validator;
@@ -64,30 +68,9 @@ abstract class FindApiQuery
         return new $class($input, $params);
     }
 
-    // public static function fromRequest(Request $request): self
-    // {
-    //     $class = get_called_class();
-
-    //     return new $class($request);
-    // }
-
-    /**
-     * Если в реализации поиска существует метод rules()
-     * данные будут получены из него. Иначе будет использоваться
-     * атрибут rules
-     */
-    private function queryRealisationRules(): array
+    protected function rules(): array
     {
-        if (method_exists($this, 'rules')) {
-            $rules = $this->{'rules'}();
-            if (! is_array($rules)) {
-                return [];
-            }
-        } else {
-            $rules = $this->rules;
-        }
-
-        return $rules;
+        return $this->rules;
     }
 
     /**
@@ -98,14 +81,14 @@ abstract class FindApiQuery
         $sql = $this->sql();
 
         $this->setFields($sql);
-        $this->setRelations($sql);
         $this->before($sql);
 
         $results = $this->limitedResults($sql);
 
-        $this->setAppends($results);
-        $this->setHidden($results);
+        // $this->setAppends($results);
+        // $this->setHidden($results);
         $this->after($results);
+        $this->hideFields($results, $this->fields);
 
         return $results;
     }
@@ -183,7 +166,7 @@ abstract class FindApiQuery
      */
     private function setFields(Builder $sql): void
     {
-        $fields = $this->requestedFields();
+        $fields = $this->requestedFields;
         $fields = $this->prefixableFields($this->table, array_unique($fields));
 
         $sql->select($fields);
@@ -203,201 +186,110 @@ abstract class FindApiQuery
     }
 
     /**
-     * Запрашиваемые отношения
-     */
-    private function setRelations(Builder $sql): void
-    {
-        if (! $this->allowedRelations) {
-            return;
-        }
-
-        if (! $this->requestedRelations()) {
-            return;
-        }
-
-        $sql->with(
-            $this->requestedRelations()
-        );
-    }
-
-    /**
      * Скрыть поле
      */
-    protected function hideField(string $field): void
+    protected function hideFields(Collection $results, Fields $fields): void
     {
-        $this->hiddenFields[] = $field;
-    }
+        $hidden = $fields->hidden();
 
-    /**
-     * Добавление кастомных мутаторов модели к результатам запроса.
-     * Для этого в модели должны быть соответствующие getAttribute().
-     * В модели $appends указывать не нужно, иначе они будут присутствовать
-     * во всех результатах поиска модели.
-     * Appends будут динамически проинициализированы здесь на основе
-     * запрошенных полей.
-     *
-     * @param Collection|Paginator $results
-     */
-    private function setAppends($results): void
-    {
-        if (! $this->allowedAppends) {
+        if (! $hidden) {
             return;
         }
 
-        $appends = $this->requestedAppends();
+        // @todo optimize
 
-        if (! $appends) {
-            return;
+        foreach ($results as $row) {
+            foreach ($hidden as $field) {
+                unset($row->$field);
+            }
         }
-
-        foreach ($results as $item) {
-            $item->setAppends($appends);
-        }
-
-        $hiddenDependencies = array_diff(
-            $this->allowedAppendsDependencies,
-            $this->allowedFields
-        );
-
-        $results->makeHidden($hiddenDependencies);
     }
 
-    /**
-     * Скрытие полей из полученных данных.
-     *
-     * @param Collection|Paginator $results
-     */
-    private function setHidden($results): void
-    {
-        if (! $this->hiddenFields) {
-            return;
-        }
-
-        $results->makeHidden($this->hiddenFields);
-    }
-
-    /**
-     * Парсинг запроса
-     * Выяснение необходимых полей, дополнительных атрибутов и связей
-     * Заполнение
-     *     requestedFields
-     *     requestedAppends
-     *     requestedRelations
-     */
-    private function parseInput()
+    private function enableFields(array $input, Fields $fields): void
     {
         // fields, appends
 
-        if (isset($this->input['fields'])) {
-            $inputFields = explode(',', $this->input['fields']);
-            $inputFields = array_unique($inputFields);
-            foreach ($inputFields as $field) {
-                if (in_array($field, $this->allowedFields)) {
-                    $fields[] = $field;
-                } elseif (in_array($field, $this->allowedAppends)) {
-                    $appends[] = $field;
-                } else {
-                    $this->paramException(
-                        "fields",
-                        "Некорректное значение параметра. Поле \"{$field}\" отсутствует в списке разрешенных."
-                    );
-                }
+        if (! isset($input['fields'])) {
+            $fields->enableAll();
+            return;
+        }
+
+        $inputFields = explode(',', $input['fields']);
+        $inputFields = array_unique($inputFields);
+
+        foreach ($inputFields as $field) {
+            if ($fields->allowed($field)) {
+                $fields->enable($field);
+            } else {
+                $this->paramException(
+                    "fields",
+                    "Некорректное значение параметра. Поле \"{$field}\" отсутствует в списке разрешенных."
+                );
             }
-        }
-
-        // Если на входе нет fields отдаем все доступные поля таблицы
-
-        else {
-            $fields  = $this->allowedFields;
-            $appends = $this->allowedAppends;
-        }
-
-        // relations
-
-        if (isset($this->input['with'])) {
-            $relations = $this->parseInputRelations($this->input['with']);
-        }
-
-        // Если на входе нет вообще ничего, ко всем доступным полям таблицы
-        // добавляем все доступные отношения
-
-        elseif(! isset($this->input['fields'])) {
-            if ($this->allowedRelations) {
-                foreach ($this->allowedRelations as $relationName => $relationFields) {
-                    $relations[] = "{$relationName}:{$relationFields}";
-                }
-            }
-        }
-
-        if ($this->allowedAppendsDependencies) {
-            $fields = array_merge($fields, $this->allowedAppendsDependencies);
-        }
-
-        if (! empty($fields)) {
-            $this->requestedFields = $fields;
-        }
-
-        if (! empty($appends)) {
-            $this->requestedAppends = $appends;
-        }
-
-        if (! empty($relations)) {
-            $this->requestedRelations = $relations;
         }
     }
 
-    private function parseInputRelations(array $with): array
+    private function enableRelations(array $input, Relations $relations): void
     {
-        $relations = [];
+        if (! isset($input['with']) && ! isset($input['fields'])) {
+            $relations->enableAll();
+            return;
+        }
 
-        foreach ($with as $name => $fieldsString) {
+        if (! isset($input['with'])) {
+            return;
+        }
+
+        foreach ($input['with'] as $name => $fieldsSerialized) {
 
             // Во входных параметрах было
             // with[]=название_отношения
 
             if (is_int($name)) {
+                $name = $fieldsSerialized;
+                $fieldsSerialized = null;
+            }
+
+            // if (is_int($name)) {
+            //     $this->paramException(
+            //         "with",
+            //         "Некорректное значение параметра. Пример корректного запроса with[relation]=field1,field2."
+            //     );
+            // }
+
+            if (! $relations->allowed($name)) {
                 $this->paramException(
                     "with",
-                    "Некорректное значение параметра. Пример корректного запроса with[relation]=field1,field2."
+                    "Отношение \"{$name}\" отсутствует в списке разрешенных."
                 );
             }
 
-            if (! isset($this->allowedRelations[$name])) {
-                $this->paramException(
-                    "with",
-                    "Некорректное значение параметра. Отношение \"{$name}\" отсутствует в списке разрешенных."
-                );
-            }
-
-            $fields  = explode(",", $fieldsString);
             $allowed = explode(",", $this->allowedRelations[$name]);
 
-            if (($denied = array_diff($fields, $allowed))) {
-                $this->paramException(
-                    "with[$name]",
-                    sprintf("Поля %s запрещены", implode(", ", $denied))
-                );
+            if ($fieldsSerialized) {
+                $fields = explode(",", $fieldsSerialized);
+                if (($denied = array_diff($fields, $allowed))) {
+                    $this->paramException(
+                        "with[$name]",
+                        sprintf("Поля %s запрещены", implode(", ", $denied))
+                    );
+                }
+            } else {
+                $fields = $allowed;
             }
 
-            $relations[] = $name.":".implode(",", $fields);
+            // $fields  = explode(",", $fieldsSerialized);
+            // $allowed = explode(",", $this->allowedRelations[$name]);
+
+            // if (($denied = array_diff($fields, $allowed))) {
+            //     $this->paramException(
+            //         "with[$name]",
+            //         sprintf("Поля %s запрещены", implode(", ", $denied))
+            //     );
+            // }
+
+            $relations->enable($name, $fields);
         }
-
-        return $relations;
-    }
-
-    private function requestedFields(): array
-    {
-        return $this->requestedFields;
-    }
-
-    private function requestedAppends(): array
-    {
-        return $this->requestedAppends;
-    }
-
-    private function requestedRelations(): array
-    {
-        return $this->requestedRelations;
     }
 
     private function paramException(string $param, string $message): void

@@ -11,4 +11,11 @@ class BaseQuery extends FindApiQuery
     {
         return (new ValidatorFactory())->make($input, $rules);
     }
+
+    // public static function fromRequest(Request $request): self
+    // {
+    //     $class = get_called_class();
+
+    //     return new $class($request);
+    // }
 }
