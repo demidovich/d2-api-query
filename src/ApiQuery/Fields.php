@@ -61,6 +61,11 @@ class Fields
         }
     }
 
+    public function enabled(string $field): bool
+    {
+        return array_key_exists($field, $this->enabledFields);
+    }
+
     public function enableAll(): void
     {
         $this->enabledFields = array_keys($this->allowedFields);

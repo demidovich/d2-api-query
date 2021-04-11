@@ -17,11 +17,8 @@ abstract class FindApiQuery
     protected  string  $sqlConnection;
     protected  string  $table;
     protected  array   $rules = [];
-    protected  array   $allowedFields = [];                 // ['field']
-    protected  array   $allowedAppends = [];                // ['field']
-    protected  array   $allowedAppendsDependencies = [];    // ['field']
-    protected  array   $allowedRelations = [];              // ['relation' => 'field1,field2']
-    protected  array   $hiddenFields = [];                  // ['field']
+    protected  array   $allowedFields = [];    // ['field'    => configuration ]
+    protected  array   $allowedRelations = []; // ['relation' => 'field1,field2']
     protected  int     $maxCount = 1000;
     protected  int     $perPage  = 25;
 
@@ -29,8 +26,6 @@ abstract class FindApiQuery
     private    Fields     $fields;
     private    Relations  $relations;
     private    array      $input = [];
-    private    array      $requestedFields = [];
-    private    array      $requestedAppends = [];
 
     public function __construct(array $input, ...$params)
     {
@@ -78,9 +73,10 @@ abstract class FindApiQuery
      */
     public function results()
     {
-        $sql = $this->sql();
+        $sql    = $this->sql();
+        $fields = $this->fields;
 
-        $this->setFields($sql);
+        $this->selectFields($sql, $fields);
         $this->before($sql);
 
         $results = $this->limitedResults($sql);
@@ -88,7 +84,7 @@ abstract class FindApiQuery
         // $this->setAppends($results);
         // $this->setHidden($results);
         $this->after($results);
-        $this->hideFields($results, $this->fields);
+        $this->hideFields($results, $fields);
 
         return $results;
     }
@@ -116,7 +112,7 @@ abstract class FindApiQuery
      */
     protected function hasRequestedField(string $name): bool
     {
-        return array_key_exists($name, $this->requestedFields) || array_key_exists($name, $this->requestedAppends);
+        return $this->fields->enabled($name);
     }
 
     /**
@@ -159,56 +155,34 @@ abstract class FindApiQuery
         return $sql->limit($count)->get();
     }
 
-    /**
-     * Запрашиваемые поля
-     * Все fields без "." будут преобразованы в "table.field"
-     * Это нужно для безопасного выполнения join
-     */
-    private function setFields(Builder $sql): void
-    {
-        $fields = $this->requestedFields;
-        $fields = $this->prefixableFields($this->table, array_unique($fields));
+    // /**
+    //  * Запрашиваемые поля
+    //  * Все fields без "." будут преобразованы в "table.field"
+    //  * Это нужно для безопасного выполнения join
+    //  */
+    // private function setFields(Builder $sql): void
+    // {
+    //     $fields = $this->requestedFields;
+    //     $fields = $this->prefixableFields($this->table, array_unique($fields));
 
-        $sql->select($fields);
-    }
+    //     $sql->select($fields);
+    // }
 
-    private function prefixableFields(string $table, array $fields): array
-    {
-        $results = [];
+    // private function prefixableFields(string $table, array $fields): array
+    // {
+    //     $results = [];
 
-        foreach ($fields as &$row) {
-            if (false === stripos($row, ".")) {
-                $results[] = "$table.$row";
-            }
-        }
+    //     foreach ($fields as &$row) {
+    //         if (false === stripos($row, ".")) {
+    //             $results[] = "$table.$row";
+    //         }
+    //     }
 
-        return $results;
-    }
-
-    /**
-     * Скрыть поле
-     */
-    protected function hideFields(Collection $results, Fields $fields): void
-    {
-        $hidden = $fields->hidden();
-
-        if (! $hidden) {
-            return;
-        }
-
-        // @todo optimize
-
-        foreach ($results as $row) {
-            foreach ($hidden as $field) {
-                unset($row->$field);
-            }
-        }
-    }
+    //     return $results;
+    // }
 
     private function enableFields(array $input, Fields $fields): void
     {
-        // fields, appends
-
         if (! isset($input['fields'])) {
             $fields->enableAll();
             return;
@@ -250,13 +224,6 @@ abstract class FindApiQuery
                 $fieldsSerialized = null;
             }
 
-            // if (is_int($name)) {
-            //     $this->paramException(
-            //         "with",
-            //         "Некорректное значение параметра. Пример корректного запроса with[relation]=field1,field2."
-            //     );
-            // }
-
             if (! $relations->allowed($name)) {
                 $this->paramException(
                     "with",
@@ -264,31 +231,45 @@ abstract class FindApiQuery
                 );
             }
 
-            $allowed = explode(",", $this->allowedRelations[$name]);
+            $allowedFields = explode(",", $this->allowedRelations[$name]);
 
             if ($fieldsSerialized) {
                 $fields = explode(",", $fieldsSerialized);
-                if (($denied = array_diff($fields, $allowed))) {
+                if (($denied = array_diff($fields, $allowedFields))) {
                     $this->paramException(
                         "with[$name]",
                         sprintf("Поля %s запрещены", implode(", ", $denied))
                     );
                 }
             } else {
-                $fields = $allowed;
+                $fields = $allowedFields;
             }
 
-            // $fields  = explode(",", $fieldsSerialized);
-            // $allowed = explode(",", $this->allowedRelations[$name]);
-
-            // if (($denied = array_diff($fields, $allowed))) {
-            //     $this->paramException(
-            //         "with[$name]",
-            //         sprintf("Поля %s запрещены", implode(", ", $denied))
-            //     );
-            // }
-
             $relations->enable($name, $fields);
+        }
+    }
+
+    private function selectFields(Builder $sql, Fields $fields): void
+    {
+        $sql->select(
+            $fields->toSql()
+        );
+    }
+
+    private function hideFields(Collection $results, Fields $fields): void
+    {
+        $hidden = $fields->hidden();
+
+        if (! $hidden) {
+            return;
+        }
+
+        // @todo optimize
+
+        foreach ($results as $row) {
+            foreach ($hidden as $field) {
+                unset($row->$field);
+            }
         }
     }
 
