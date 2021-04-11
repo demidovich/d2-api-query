@@ -2,10 +2,13 @@
 
 namespace D2\ApiQuery;
 
+use D2\ApiQuery\Components\Fields;
+use D2\ApiQuery\Components\Relations;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Capsule\Manager as Capsule;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -47,11 +50,8 @@ abstract class FindApiQuery
 
         $this->input     = $validator->validated();
         $this->sql       = Capsule::connection($this->sqlConnection)->table($this->table)->select();
-        $this->fields    = new Fields($this->allowedFields);
-        $this->relations = new Relations($this->allowedRelations);
-
-        $this->enableFields($this->input, $this->fields);
-        $this->enableRelations($this->input, $this->relations);
+        $this->fields    = $this->fieldsInstance($this->input);
+        $this->relations = $this->relationsInstance($this->input);
     }
 
     protected abstract function validator(array $input, array $rules): Validator;
@@ -148,71 +148,53 @@ abstract class FindApiQuery
         if ($count > $this->maxCount) {
             $this->paramException(
                 "count",
-                "Превышено максимальное значение count $this->maxCount."
+                "Превышено максимально допустимое значение count $this->maxCount."
             );
         }
 
         return $sql->limit($count)->get();
     }
 
-    // /**
-    //  * Запрашиваемые поля
-    //  * Все fields без "." будут преобразованы в "table.field"
-    //  * Это нужно для безопасного выполнения join
-    //  */
-    // private function setFields(Builder $sql): void
-    // {
-    //     $fields = $this->requestedFields;
-    //     $fields = $this->prefixableFields($this->table, array_unique($fields));
-
-    //     $sql->select($fields);
-    // }
-
-    // private function prefixableFields(string $table, array $fields): array
-    // {
-    //     $results = [];
-
-    //     foreach ($fields as &$row) {
-    //         if (false === stripos($row, ".")) {
-    //             $results[] = "$table.$row";
-    //         }
-    //     }
-
-    //     return $results;
-    // }
-
-    private function enableFields(array $input, Fields $fields): void
+    private function fieldsInstance(array $input): Fields
     {
         if (! isset($input['fields'])) {
-            $fields->enableAll();
-            return;
+            return new Fields($this->allowedFields);
         }
 
         $inputFields = explode(',', $input['fields']);
         $inputFields = array_unique($inputFields);
+        $requested   = [];
+        $denied      = [];
 
         foreach ($inputFields as $field) {
-            if ($fields->allowed($field)) {
-                $fields->enable($field);
+            if (isset($this->allowedFields[$field])) {
+                $requested[$field] = $this->allowedFields[$field];
             } else {
-                $this->paramException(
-                    "fields",
-                    "Некорректное значение параметра. Поле \"{$field}\" отсутствует в списке разрешенных."
-                );
+                $denied[] = $field;
             }
         }
+
+        if ($denied) {
+            $this->paramException(
+                "fields",
+                sprintf("Поля {$denied} отсутствуют в списке разрешенных.", implode('", "', $denied))
+            );
+        }
+
+        return new Fields($requested);
     }
 
-    private function enableRelations(array $input, Relations $relations): void
+    private function relationsInstance(Fields $fields, array $input): Relations
     {
         if (! isset($input['with']) && ! isset($input['fields'])) {
-            $relations->enableAll();
-            return;
+            return new Relations($fields, $this->allowedRelations);
         }
 
         if (! isset($input['with'])) {
-            return;
+            return Relations::empty();
         }
+
+        $relations = [];
 
         foreach ($input['with'] as $name => $fieldsSerialized) {
 
@@ -224,7 +206,7 @@ abstract class FindApiQuery
                 $fieldsSerialized = null;
             }
 
-            if (! $relations->allowed($name)) {
+            if (! isset($this->allowedRelations[$name])) {
                 $this->paramException(
                     "with",
                     "Отношение \"{$name}\" отсутствует в списке разрешенных."
@@ -234,19 +216,21 @@ abstract class FindApiQuery
             $allowedFields = explode(",", $this->allowedRelations[$name]);
 
             if ($fieldsSerialized) {
-                $fields = explode(",", $fieldsSerialized);
-                if (($denied = array_diff($fields, $allowedFields))) {
+                $requestedFields = explode(",", $fieldsSerialized);
+                if (($deniedFields = array_diff($requestedFields, $allowedFields))) {
                     $this->paramException(
-                        "with[$name]",
-                        sprintf("Поля %s запрещены", implode(", ", $denied))
+                        "with",
+                        sprintf("Поля %s отношения {$name} отсутствуют в списке разрешенных.", implode(", ", $deniedFields))
                     );
                 }
             } else {
-                $fields = $allowedFields;
+                $requestedFields = $allowedFields;
             }
 
-            $relations->enable($name, $fields);
+            $relations[$name] = $requestedFields;
         }
+
+        return new Relations($fields, $relations);
     }
 
     private function selectFields(Builder $sql, Fields $fields): void

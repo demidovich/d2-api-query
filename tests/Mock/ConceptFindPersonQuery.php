@@ -14,7 +14,7 @@ class ConceptFindPersonQuery extends BaseQuery
         "id",
         "first_name",
         "last_name",
-        "fullname"   => "append:fullname|depends:first_name,last_name",
+        "fullname"   => "append|depends:first_name,last_name",
         "created_at" => "sql:to_json(created_at)",
         "updated_at" => "format:json_date",
     ];
