@@ -8,12 +8,16 @@ use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Capsule\Manager as Capsule;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 /**
  * ?created_at[leq]=2010-01-01&fields=id,name,role.id&sort[created_at]=asc
+ * $allowedFields = [
+ *     'id',
+ *     'created_at' => 'sql:to_json(created_at)'
+ * ]
  */
 abstract class FindApiQuery
 {
@@ -51,7 +55,7 @@ abstract class FindApiQuery
         $this->input     = $validator->validated();
         $this->sql       = Capsule::connection($this->sqlConnection)->table($this->table)->select();
         $this->fields    = $this->fieldsInstance($this->input);
-        $this->relations = $this->relationsInstance($this->input);
+        $this->relations = $this->relationsInstance($this->fields, $this->input);
     }
 
     protected abstract function validator(array $input, array $rules): Validator;
@@ -81,10 +85,9 @@ abstract class FindApiQuery
 
         $results = $this->limitedResults($sql);
 
-        // $this->setAppends($results);
-        // $this->setHidden($results);
+        $this->addAppends($results, $fields->appends());
         $this->after($results);
-        $this->hideFields($results, $fields);
+        $this->hideFields($results, $fields->hidden());
 
         return $results;
     }
@@ -112,7 +115,7 @@ abstract class FindApiQuery
      */
     protected function hasRequestedField(string $name): bool
     {
-        return $this->fields->enabled($name);
+        return $this->fields->has($name);
     }
 
     /**
@@ -157,8 +160,18 @@ abstract class FindApiQuery
 
     private function fieldsInstance(array $input): Fields
     {
+        $allowedFieldsKeyable = [];
+
+        foreach ($this->allowedFields as $k => $v) {
+            if (is_int($k)) {
+                $k = $v;
+                $v = null;
+            }
+            $allowedFieldsKeyable[$k] = $v;
+        }
+
         if (! isset($input['fields'])) {
-            return new Fields($this->allowedFields);
+            return new Fields($allowedFieldsKeyable);
         }
 
         $inputFields = explode(',', $input['fields']);
@@ -167,8 +180,8 @@ abstract class FindApiQuery
         $denied      = [];
 
         foreach ($inputFields as $field) {
-            if (isset($this->allowedFields[$field])) {
-                $requested[$field] = $this->allowedFields[$field];
+            if (array_key_exists($field, $allowedFieldsKeyable)) {
+                $requested[$field] = $allowedFieldsKeyable[$field];
             } else {
                 $denied[] = $field;
             }
@@ -177,7 +190,7 @@ abstract class FindApiQuery
         if ($denied) {
             $this->paramException(
                 "fields",
-                sprintf("Поля {$denied} отсутствуют в списке разрешенных.", implode('", "', $denied))
+                sprintf('Поля "%s" отсутствуют в списке разрешенных.', implode('", "', $denied))
             );
         }
 
@@ -236,22 +249,57 @@ abstract class FindApiQuery
     private function selectFields(Builder $sql, Fields $fields): void
     {
         $sql->select(
-            $fields->toSql()
+            $fields->sql()
         );
     }
 
-    private function hideFields(Collection $results, Fields $fields): void
+    /**
+     * @property Collection|Paginator
+     */
+    private function addAppends($results, array $appends): void
     {
-        $hidden = $fields->hidden();
+        if (! $appends) {
+            return;
+        }
 
-        if (! $hidden) {
+        $methods = [];
+
+        foreach ($appends as $name) {
+            $method = $this->studly($name) . 'Append';
+            if (! method_exists($this, $method)) {
+                $class = get_called_class();
+                throw new RuntimeException("В $class отсутствует append метод $method");
+            }
+            $methods[] = $method;
+        }
+
+        foreach ($results as $row) {
+            foreach ($methods as $method) {
+                $this->$method($row);
+            }
+        }
+    }
+
+    private function studly(string $value): string
+    {
+        $value = ucwords(str_replace(['-', '_'], ' ', $value));
+
+        return str_replace(' ', '', $value);
+    }
+
+    /**
+     * @property Collection|Paginator
+     */
+    private function hideFields($results, array $fields): void
+    {
+        if (! $fields) {
             return;
         }
 
         // @todo optimize
 
         foreach ($results as $row) {
-            foreach ($hidden as $field) {
+            foreach ($fields as $field) {
                 unset($row->$field);
             }
         }

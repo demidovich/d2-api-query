@@ -9,17 +9,23 @@ class DevTest extends TestCase
 {
     public function test_dev()
     {
-        // $this->assertTrue(true);
-        // return;
+        $this->assertTrue(true);
+        return;
 
-        $a = ['a', 'b', 'c'];
-        $b = ['c', 'd'];
+        $sql = [
+            "id" => "id",
+            "first_name" => "first_name",
+            "last_name" => "last_name",
+          
+        ];
 
-        $a = $b + $a;
+        $dependencies = [
+            "id" => "id",
+        ];
 
-        //$c = array_merge($a, $b);
+        $hidden = array_diff($dependencies, $sql);
 
-        dd($a);
+        dd($hidden);
 
         // v3
 

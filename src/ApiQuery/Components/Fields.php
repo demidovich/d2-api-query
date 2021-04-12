@@ -4,6 +4,9 @@ namespace D2\ApiQuery\Components;
 
 use RuntimeException;
 
+/**
+ * 
+ */
 class Fields
 {
     private array $sql          = [];
@@ -13,14 +16,7 @@ class Fields
 
     public function __construct(array $fields)
     {
-        foreach ($fields as $k => $v) {
-            if (is_int($k)) {
-                $field  = $v;
-                $config = null;
-            } else {
-                $field  = $k;
-                $config = $v;
-            }
+        foreach ($fields as $field => $config) {
             $this->add($field, $config);
         }
     }
@@ -113,23 +109,45 @@ class Fields
 
     public function addDependency(string $field): void
     {
-        if (! in_array($field, $this->dependencies)) {
-            $this->dependencies[] = $field;
-        }
+        $this->dependencies[$field] = $field;
     }
 
     public function hidden(): array
     {
+        $requested = $this->sql + $this->dependencies;
 
+        return array_keys(
+            array_diff(
+                $this->dependencies,
+                $requested
+            )
+        );
     }
 
-    public function toSql(): array
+    public function sql(): array
     {
-        return array_values($this->sql);
+        $fields  = $this->sql + $this->dependencies;
+        $results = [];
+
+        foreach ($fields as $field => $sql) {
+            $results[] = $field === $sql ? $field : "$sql as $field";
+        }
+
+        return $results;
     }
 
-    public function formatResults(object $row): object
+    public function formats(): array
     {
+        return $this->formats;
+    }
 
+    public function appends(): array
+    {
+        return $this->appends;
+    }
+
+    public function has(string $field): bool
+    {
+        return (isset($this->sql[$field]) || isset($this->appends[$field]));
     }
 }
