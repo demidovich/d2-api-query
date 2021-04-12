@@ -77,8 +77,9 @@ abstract class FindApiQuery
      */
     public function results()
     {
-        $fields = $this->fields;
-        $sql    = $this->sql();
+        $sql       = $this->sql();
+        $fields    = $this->fields;
+        $relations = $this->relations;
 
         $this->before($sql);
 
@@ -88,7 +89,7 @@ abstract class FindApiQuery
         if ($results->count() > 0) {
             $this->makeResultsAppends($results, $fields->appends());
             $this->makeResultsFormats($results, $fields->formats());
-            //$this->makeResultsRelations($results);
+            //$this->makeResultsRelations($results, $relations->all());
             $this->after($results);
             $this->makeResultsHiddens($results, $fields->hidden());
         }
@@ -304,6 +305,14 @@ abstract class FindApiQuery
                 $row->$field = $this->$method($row->$field);
             }
         }
+    }
+
+    /**
+     * @property Collection|Paginator
+     */
+    private function makeResultsRelations($results, array $relations): void
+    {
+
     }
 
     /**

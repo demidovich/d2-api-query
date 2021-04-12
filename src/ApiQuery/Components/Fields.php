@@ -4,9 +4,6 @@ namespace D2\ApiQuery\Components;
 
 use RuntimeException;
 
-/**
- * 
- */
 class Fields
 {
     private array $sql          = [];

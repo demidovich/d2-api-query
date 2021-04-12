@@ -34,4 +34,9 @@ class Relations
     {
 
     }
+
+    public function all(): array
+    {
+        return $this->relations;
+    }
 }
