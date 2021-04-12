@@ -6,7 +6,7 @@ use Tests\Mock\FindPersonAppendsQuery;
 
 class FindAppendsTest extends TestCase
 {
-    public function test_not_set()
+    public function test_default()
     {
         $results = $this->queryFirstItem(FindPersonAppendsQuery::class);
 
@@ -16,7 +16,7 @@ class FindAppendsTest extends TestCase
         $this->assertArrayHasKey("fullname", $results);
     }
 
-    public function test_set_one()
+    public function test_select()
     {
         $results = $this->queryFirstItem(FindPersonAppendsQuery::class, ["fields" => "id,fullname"]);
 
@@ -24,5 +24,15 @@ class FindAppendsTest extends TestCase
         $this->assertEquals(2, count($results));
         $this->assertArrayHasKey("id", $results);
         $this->assertArrayHasKey("fullname", $results);
+    }
+
+    public function test_not_select()
+    {
+        $results = $this->queryFirstItem(FindPersonAppendsQuery::class, ["fields" => "id"]);
+
+        $this->assertNotEmpty($results);
+        $this->assertEquals(1, count($results));
+        $this->assertArrayHasKey("id", $results);
+        $this->assertArrayNotHasKey("fullname", $results);
     }
 }

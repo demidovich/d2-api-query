@@ -17,9 +17,4 @@ class FindPersonAppendsQuery extends BaseQuery
     {
         $row->fullname = "{$row->first_name} {$row->last_name}";
     }
-
-    protected function zeroAppend(object $row): void
-    {
-        $row->zero = "zero";
-    }
 }

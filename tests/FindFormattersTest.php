@@ -6,7 +6,7 @@ use Tests\Mock\FindPersonFormattersQuery;
 
 class FindFormattersTest extends TestCase
 {
-    public function test_not_set()
+    public function test_default()
     {
         $results = $this->queryFirstItem(FindPersonFormattersQuery::class);
 
@@ -18,7 +18,7 @@ class FindFormattersTest extends TestCase
         $this->assertTrue(str_contains($results['created_at'], 'T'));
     }
 
-    public function test_set_one()
+    public function test_select()
     {
         $results = $this->queryFirstItem(FindPersonFormattersQuery::class, ["fields" => "created_at"]);
 

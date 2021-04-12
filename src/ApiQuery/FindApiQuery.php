@@ -13,7 +13,10 @@ use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 /**
- * ?created_at[leq]=2010-01-01&fields=id,name,role.id&sort[created_at]=asc
+ * fields=id,name
+ * with[city]=id,name
+ * with[]=city
+ * 
  * $allowedFields = [
  *     'id',
  *     'created_at' => 'sql:to_json(created_at)'
@@ -54,8 +57,8 @@ abstract class FindApiQuery
 
         $this->input     = $validator->validated();
         $this->sql       = Capsule::connection($this->sqlConnection)->table($this->table)->select();
-        $this->fields    = $this->fieldsInstance($this->input);
-        $this->relations = $this->relationsInstance($this->fields, $this->input);
+        $this->fields    = $this->fieldsInstance($this->allowedFields, $this->input);
+        $this->relations = $this->relationsInstance($this->fields, $this->allowedRelations, $this->input);
     }
 
     protected abstract function validator(array $input, array $rules): Validator;
@@ -89,12 +92,20 @@ abstract class FindApiQuery
         if ($results->count() > 0) {
             $this->makeResultsAppends($results, $fields->appends());
             $this->makeResultsFormats($results, $fields->formats());
-            //$this->makeResultsRelations($results, $relations->all());
+            $this->makeResultsRelations($results, $relations->all());
             $this->after($results);
             $this->makeResultsHiddens($results, $fields->hidden());
         }
 
         return $results;
+    }
+
+    /**
+     * @return Collection|Paginator
+     */
+    public function resultsBy(string $key)
+    {
+        return $this->results()->keyBy($key);
     }
 
     public function sql(): Builder
@@ -163,30 +174,33 @@ abstract class FindApiQuery
         return $sql->limit($count)->get();
     }
 
-    private function fieldsInstance(array $input): Fields
+    private function fieldsInstance(array $allowedRaw, array $input): Fields
     {
-        $allowedFieldsKeyable = [];
+        $fields = new Fields();
 
-        foreach ($this->allowedFields as $k => $v) {
+        $allowed = [];
+        foreach ($allowedRaw as $k => $v) {
             if (is_int($k)) {
                 $k = $v;
                 $v = null;
             }
-            $allowedFieldsKeyable[$k] = $v;
+            $allowed[$k] = $v;
         }
 
         if (! isset($input['fields'])) {
-            return new Fields($allowedFieldsKeyable);
+            foreach ($allowed as $field => $config) {
+                $fields->add($field, $config);
+            }
+            return $fields;
         }
 
-        $inputFields = explode(',', $input['fields']);
-        $inputFields = array_unique($inputFields);
-        $requested   = [];
-        $denied      = [];
+        $requested = array_unique(explode(',', $input['fields']));
+        $prepared  = [];
+        $denied    = [];
 
-        foreach ($inputFields as $field) {
-            if (array_key_exists($field, $allowedFieldsKeyable)) {
-                $requested[$field] = $allowedFieldsKeyable[$field];
+        foreach ($requested as $field) {
+            if (array_key_exists($field, $allowed)) {
+                $prepared[$field] = $allowed[$field];
             } else {
                 $denied[] = $field;
             }
@@ -199,20 +213,30 @@ abstract class FindApiQuery
             );
         }
 
-        return new Fields($requested);
+        foreach ($prepared as $field => $config) {
+            $fields->add($field, $config);
+        }
+
+        return $fields;
     }
 
-    private function relationsInstance(Fields $fields, array $input): Relations
+    private function relationsInstance(Fields $fields, array $allowed, array $input): Relations
     {
+        $relations = new Relations($fields);
+
         if (! isset($input['with']) && ! isset($input['fields'])) {
-            return new Relations($fields, $this->allowedRelations);
+            foreach ($allowed as $relation => $config) {
+                $relations->add($relation, $config);
+            }
+            return $relations;
         }
 
         if (! isset($input['with'])) {
-            return Relations::empty();
+            return $relations;
         }
 
-        $relations = [];
+        $prepared = [];
+        $denied   = [];
 
         foreach ($input['with'] as $name => $fieldsSerialized) {
 
@@ -224,32 +248,78 @@ abstract class FindApiQuery
                 $fieldsSerialized = null;
             }
 
-            if (! isset($this->allowedRelations[$name])) {
-                $this->paramException(
-                    "with",
-                    "Отношение \"{$name}\" отсутствует в списке разрешенных."
-                );
-            }
-
-            $allowedFields = explode(",", $this->allowedRelations[$name]);
-
-            if ($fieldsSerialized) {
-                $requestedFields = explode(",", $fieldsSerialized);
-                if (($deniedFields = array_diff($requestedFields, $allowedFields))) {
-                    $this->paramException(
-                        "with",
-                        sprintf("Поля %s отношения {$name} отсутствуют в списке разрешенных.", implode(", ", $deniedFields))
-                    );
-                }
+            if (isset($this->allowedRelations[$name])) {
+                $prepared[$name] = $this->allowedRelations[$name];
             } else {
-                $requestedFields = $allowedFields;
+                $denied[] = $name;
             }
-
-            $relations[$name] = $requestedFields;
         }
 
-        return new Relations($fields, $relations);
+        if ($denied) {
+            $this->paramException(
+                "with",
+                sprintf('Отношения "%s" отсутствуют в списке разрешенных.', implode('", "', $denied))
+            );
+        }
+
+        foreach ($prepared as $name => $config) {
+            $relations->add($name, $config);
+        }
+
+        return $relations;
     }
+
+    // private function relationsInstance(Fields $fields, array $allowed, array $input): Relations
+    // {
+    //     $relations = new Relations($fields);
+
+    //     if (! isset($input['with']) && ! isset($input['fields'])) {
+    //         foreach ($allowed as $relation => $config) {
+    //             $relations->add($relation, $config);
+    //         }
+    //         return $relations;
+    //     }
+
+    //     if (! isset($input['with'])) {
+    //         return $relations;
+    //     }
+
+    //     foreach ($input['with'] as $name => $fieldsSerialized) {
+
+    //         // Во входных параметрах было
+    //         // with[]=название_отношения
+
+    //         if (is_int($name)) {
+    //             $name = $fieldsSerialized;
+    //             $fieldsSerialized = null;
+    //         }
+
+    //         if (! isset($this->allowedRelations[$name])) {
+    //             $this->paramException(
+    //                 "with",
+    //                 "Отношение \"{$name}\" отсутствует в списке разрешенных."
+    //             );
+    //         }
+
+    //         $allowedFields = explode(",", $this->allowedRelations[$name]);
+
+    //         if ($fieldsSerialized) {
+    //             $requestedFields = explode(",", $fieldsSerialized);
+    //             if (($deniedFields = array_diff($requestedFields, $allowedFields))) {
+    //                 $this->paramException(
+    //                     "with",
+    //                     sprintf("Поля %s отношения {$name} отсутствуют в списке разрешенных.", implode(", ", $deniedFields))
+    //                 );
+    //             }
+    //         } else {
+    //             $requestedFields = $allowedFields;
+    //         }
+
+    //         $relations[$name] = $requestedFields;
+    //     }
+
+    //     return new Relations($fields, $relations);
+    // }
 
     /**
      * @property Collection|Paginator
@@ -312,7 +382,21 @@ abstract class FindApiQuery
      */
     private function makeResultsRelations($results, array $relations): void
     {
+        if (! $relations) {
+            return;
+        }
 
+        foreach ($relations as $relation) {
+
+            $method = $this->camelCase($relation) . 'Relation';
+
+            if (! method_exists($this, $method)) {
+                $class  = get_called_class();
+                throw new RuntimeException("В $class отсутствует relation метод $method");
+            }
+
+            $this->$method($results);
+        }
     }
 
     /**

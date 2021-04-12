@@ -11,20 +11,13 @@ class Fields
     private array $appends      = [];
     private array $dependencies = [];
 
-    public function __construct(array $fields)
-    {
-        foreach ($fields as $field => $config) {
-            $this->add($field, $config);
-        }
-    }
-
     /**
      * fullname   => append:first_name,last_name
      * fullname   => sql:first_name || ' ' || last_name
      * created_at => sql:to_json(created_at)
      * updated_at => format:json_date
      */
-    private function add(string $field, ?string $config = null): void
+    public function add(string $field, ?string $config = null): void
     {
         if (! $config) {            
             $this->sql[$field] = $field;

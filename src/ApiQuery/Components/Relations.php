@@ -2,41 +2,68 @@
 
 namespace D2\ApiQuery\Components;
 
+use RuntimeException;
+
 class Relations
 {
     private Fields $fields;
     private array  $relations = [];
 
-    public function __construct(Fields $fields, array $relations)
+    public function __construct(Fields $fields)
     {
         $this->fields = $fields;
+    }
 
-        foreach ($relations as $k => $v) {
-            if (is_int($k)) {
-                $relation = $v;
-                $config   = null;
-            } else {
-                $relation = $k;
-                $config   = $v;
+    public function add(string $relation, string $config): void
+    {
+        $this->relations[$relation] = $relation;
+
+        $segments = explode("|", $config);
+
+        foreach ($segments as $segment) {
+
+            if (! preg_match("/^(fields|depends)(?:\:(.+))$/", $segment, $match)) {
+                throw new RuntimeException(
+                    sprintf('Некорректная конфигурация "%s" поля "%s".', $segment, $relation)
+                );
             }
-            $this->add($relation, $config);
+
+            $name    = $match[1];
+            $options = $match[2];
+
+            if ($name == "depends") {
+                $this->addDependencies($relation, $options);
+            }
+
+            // elseif ($name == "fields") {
+            //     $this->addFields($relation, $options, $requestedFields);
+            // }
         }
     }
 
-    public static function empty(): self
+    private function addDependencies(string $field, string $options): void
     {
-        $fields = new Fields([]);
+        $dependencies = explode(",", $options);
 
-        return new self($fields, []);
+        foreach ($dependencies as $field) {
+            $this->fields->addDependency($field);
+        }
     }
 
-    private function add(string $relation, string $config): void
-    {
+    // private function addFields(string $relation, string $options, array $requestedFields): void
+    // {
+    //     $allowedFields = explode(",", $options);
 
-    }
+    //     if (($deniedFields = array_diff($requestedFields, $allowedFields))) {
+    //         $this->paramException(
+    //             "with",
+    //             sprintf("Поля %s отношения {$name} отсутствуют в списке разрешенных.", implode(", ", $deniedFields))
+    //         );
+    //     }
+    // }
 
     public function all(): array
     {
-        return $this->relations;
+        return array_values($this->relations);
     }
 }
