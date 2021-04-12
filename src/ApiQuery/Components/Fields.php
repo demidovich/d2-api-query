@@ -38,7 +38,7 @@ class Fields
 
             if (! preg_match("/^(sql|format|append)(?:\:(.+))$/", $segment, $match)) {
                 throw new RuntimeException(
-                    sprintf('Некорректная конфигурация поля "%s".', $field)
+                    sprintf('Некорректная конфигурация "%s" поля "%s".', $segment, $field)
                 );
             }
 

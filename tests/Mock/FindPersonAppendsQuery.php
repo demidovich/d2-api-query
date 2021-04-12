@@ -10,11 +10,16 @@ class FindPersonAppendsQuery extends BaseQuery
 
     protected array $allowedFields = [
         "id",
-        "fullname" => "append:first_name,last_name"
+        "fullname" => "append:first_name,last_name",
     ];
 
     protected function fullnameAppend(object $row): void
     {
         $row->fullname = "{$row->first_name} {$row->last_name}";
+    }
+
+    protected function zeroAppend(object $row): void
+    {
+        $row->zero = "zero";
     }
 }
