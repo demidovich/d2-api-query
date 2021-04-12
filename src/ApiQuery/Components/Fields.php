@@ -114,14 +114,21 @@ class Fields
 
     public function hidden(): array
     {
+        $hidden = [];
+
+        if (! $this->dependencies) {
+            return $hidden;
+        }
+
         $requested = $this->sql + $this->dependencies;
 
-        return array_keys(
-            array_diff(
-                $this->dependencies,
-                $requested
-            )
-        );
+        foreach ($this->dependencies as $k => $v) {
+            if (isset($requested[$k])) {
+                $hidden[] = $k;
+            }
+        }
+
+        return $hidden;
     }
 
     public function sql(): array

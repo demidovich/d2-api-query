@@ -13,8 +13,4 @@ class FindPersonQuery extends BaseQuery
         "first_name",
         "last_name",
     ];
-
-    protected array $rules = [
-        "city_id" => "nullable|integer",
-    ];
 }

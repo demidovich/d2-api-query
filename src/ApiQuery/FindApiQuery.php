@@ -77,17 +77,21 @@ abstract class FindApiQuery
      */
     public function results()
     {
-        $sql    = $this->sql();
         $fields = $this->fields;
+        $sql    = $this->sql();
 
-        $this->selectFields($sql, $fields);
         $this->before($sql);
 
+        $sql->select($fields->sql());
         $results = $this->limitedResults($sql);
 
-        $this->addAppends($results, $fields->appends());
-        $this->after($results);
-        $this->hideFields($results, $fields->hidden());
+        if ($results->count() > 0) {
+            $this->makeResultsAppends($results, $fields->appends());
+            $this->makeResultsFormats($results, $fields->formats());
+            //$this->makeResultsRelations($results);
+            $this->after($results);
+            $this->makeResultsHiddens($results, $fields->hidden());
+        }
 
         return $results;
     }
@@ -246,17 +250,10 @@ abstract class FindApiQuery
         return new Relations($fields, $relations);
     }
 
-    private function selectFields(Builder $sql, Fields $fields): void
-    {
-        $sql->select(
-            $fields->sql()
-        );
-    }
-
     /**
      * @property Collection|Paginator
      */
-    private function addAppends($results, array $appends): void
+    private function makeResultsAppends($results, array $appends): void
     {
         if (! $appends) {
             return;
@@ -265,7 +262,7 @@ abstract class FindApiQuery
         $methods = [];
 
         foreach ($appends as $name) {
-            $method = $this->studly($name) . 'Append';
+            $method = $this->camelCase($name) . 'Append';
             if (! method_exists($this, $method)) {
                 $class = get_called_class();
                 throw new RuntimeException("В $class отсутствует append метод $method");
@@ -280,17 +277,39 @@ abstract class FindApiQuery
         }
     }
 
-    private function studly(string $value): string
+    /**
+     * @property Collection|Paginator
+     */
+    private function makeResultsFormats($results, array $formatFields): void
     {
-        $value = ucwords(str_replace(['-', '_'], ' ', $value));
+        if (! $formatFields) {
+            return;
+        }
 
-        return str_replace(' ', '', $value);
+        $formatters = [];
+        foreach ($formatFields as $field => $formatter) {
+
+            $method = $this->camelCase($formatter) . 'Formatter';
+
+            if (! method_exists($this, $method)) {
+                $class  = get_called_class();
+                throw new RuntimeException("В $class отсутствует format метод $method");
+            }
+
+            $formatters[$field] = $method;
+        }
+
+        foreach ($results as $row) {
+            foreach ($formatters as $field => $method) {
+                $row->$field = $this->$method($row->$field);
+            }
+        }
     }
 
     /**
      * @property Collection|Paginator
      */
-    private function hideFields($results, array $fields): void
+    private function makeResultsHiddens($results, array $fields): void
     {
         if (! $fields) {
             return;
@@ -303,6 +322,13 @@ abstract class FindApiQuery
                 unset($row->$field);
             }
         }
+    }
+
+    private function camelCase(string $value): string
+    {
+        $value = ucwords(str_replace(['-', '_'], ' ', $value));
+
+        return lcfirst(str_replace(' ', '', $value));
     }
 
     private function paramException(string $param, string $message): void
