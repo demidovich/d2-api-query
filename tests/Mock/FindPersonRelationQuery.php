@@ -24,6 +24,18 @@ class FindPersonRelationQuery extends BaseQuery
      */
     protected function cityRelation($results): void
     {
+        // $this
+        //     ->hasOne(FindCityQuery::class, 'city_id', 'id')
+        //     ->setFields('id,name')
+        //     ->to($results);
+
+        // $this
+        //     ->hasOne(FindCityQuery::class)
+        //     ->setLocalKey('city_id')
+        //     ->setRelationKey('id')
+        //     ->setFields('id,name')
+        //     ->to($results);
+
         $ids = $results->pluck("city_id")->toArray();
 
         $cities = FindCityQuery::fromArray([

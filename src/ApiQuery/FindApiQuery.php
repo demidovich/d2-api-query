@@ -42,7 +42,8 @@ abstract class FindApiQuery
         $rules = [
             'fields' => 'nullable|regex:/^[a-z\d_]+(?:,[a-z\d_]+)*$/',
             'with'   => 'nullable|array',
-            'with.*' => 'required|regex:/^[a-z\d_]+(?:,[a-z\d_]+)*$/',
+            'with.*' => 'required|regex:/^[a-z\d_]+$/',
+          //'with.*' => 'required|regex:/^[a-z\d_]+(?:,[a-z\d_]+)*$/', // with[relation]=field1,field2
             'sort'   => 'nullable|array',
             'sort.*' => 'in:asc,desc',
             'count'  => 'nullable|int',
@@ -55,13 +56,20 @@ abstract class FindApiQuery
             throw new ValidationException($validator);
         }
 
-        $this->input     = $validator->validated();
-        $this->sql       = Capsule::connection($this->sqlConnection)->table($this->table)->select();
-        $this->fields    = $this->fieldsInstance($this->allowedFields, $this->input);
-        $this->relations = $this->relationsInstance($this->fields, $this->allowedRelations, $this->input);
-    }
+        $this->input = $validator->validated();
+        $this->sql   = Capsule::connection($this->sqlConnection)->table($this->table)->select();
 
-    protected abstract function validator(array $input, array $rules): Validator;
+        $this->fields = $this->fieldsInstance(
+            $this->allowedFields, 
+            $this->input
+        );
+
+        $this->relations = $this->relationsInstance(
+            $this->fields, 
+            $this->allowedRelations, 
+            $this->input
+        );
+    }
 
     public static function fromArray(array $input, ...$params): self
     {
@@ -69,6 +77,8 @@ abstract class FindApiQuery
 
         return new $class($input, $params);
     }
+
+    protected abstract function validator(array $input, array $rules): Validator;
 
     protected function rules(): array
     {
@@ -108,9 +118,46 @@ abstract class FindApiQuery
         return $this->results()->keyBy($key);
     }
 
+    /**
+     * @return Collection|Paginator
+     */
+    private function limitedResults(Builder $sql)
+    {
+        $input = $this->input;
+
+        if (! array_key_exists('count', $input)) {
+            return $sql->simplePaginate($this->perPage)->appends($input);
+        }
+
+        $count = (int) $input['count'];
+
+        if ($count < 1) {
+            $count = $this->maxCount;
+        }
+
+        if ($count > $this->maxCount) {
+            $this->paramException(
+                "count",
+                "Превышено максимально допустимое значение count $this->maxCount."
+            );
+        }
+
+        return $sql->limit($count)->get();
+    }
+
     public function sql(): Builder
     {
         return $this->sql;
+    }
+
+    public function fields(): Fields
+    {
+        return $this->fields;
+    }
+
+    public function setMaxCount(int $value): void
+    {
+        $this->maxCount = $value;
     }
 
     protected function before(Builder $sql): void
@@ -145,33 +192,6 @@ abstract class FindApiQuery
     protected function hasRequestedFilter(string $name): bool
     {
         return array_key_exists($name, $this->input);
-    }
-
-    /**
-     * @return Collection|Paginator
-     */
-    private function limitedResults(Builder $sql)
-    {
-        $input = $this->input;
-
-        if (! array_key_exists('count', $input)) {
-            return $sql->simplePaginate($this->perPage)->appends($input);
-        }
-
-        $count = (int) $input['count'];
-
-        if ($count < 1) {
-            $count = $this->maxCount;
-        }
-
-        if ($count > $this->maxCount) {
-            $this->paramException(
-                "count",
-                "Превышено максимально допустимое значение count $this->maxCount."
-            );
-        }
-
-        return $sql->limit($count)->get();
     }
 
     private function fieldsInstance(array $allowedRaw, array $input): Fields
@@ -238,22 +258,30 @@ abstract class FindApiQuery
         $prepared = [];
         $denied   = [];
 
-        foreach ($input['with'] as $name => $fieldsSerialized) {
-
-            // Во входных параметрах было
-            // with[]=название_отношения
-
-            if (is_int($name)) {
-                $name = $fieldsSerialized;
-                $fieldsSerialized = null;
-            }
-
-            if (isset($this->allowedRelations[$name])) {
-                $prepared[$name] = $this->allowedRelations[$name];
+        foreach ($input['with'] as $relation) {
+            if (isset($this->allowedRelations[$relation])) {
+                $prepared[$relation] = $this->allowedRelations[$relation];
             } else {
-                $denied[] = $name;
+                $denied[] = $relation;
             }
         }
+
+        // foreach ($input['with'] as $name => $fieldsSerialized) {
+
+        //     // Во входных параметрах было
+        //     // with[]=название_отношения
+
+        //     if (is_int($name)) {
+        //         $name = $fieldsSerialized;
+        //         $fieldsSerialized = null;
+        //     }
+
+        //     if (isset($this->allowedRelations[$name])) {
+        //         $prepared[$name] = $this->allowedRelations[$name];
+        //     } else {
+        //         $denied[] = $name;
+        //     }
+        // }
 
         if ($denied) {
             $this->paramException(
@@ -268,58 +296,6 @@ abstract class FindApiQuery
 
         return $relations;
     }
-
-    // private function relationsInstance(Fields $fields, array $allowed, array $input): Relations
-    // {
-    //     $relations = new Relations($fields);
-
-    //     if (! isset($input['with']) && ! isset($input['fields'])) {
-    //         foreach ($allowed as $relation => $config) {
-    //             $relations->add($relation, $config);
-    //         }
-    //         return $relations;
-    //     }
-
-    //     if (! isset($input['with'])) {
-    //         return $relations;
-    //     }
-
-    //     foreach ($input['with'] as $name => $fieldsSerialized) {
-
-    //         // Во входных параметрах было
-    //         // with[]=название_отношения
-
-    //         if (is_int($name)) {
-    //             $name = $fieldsSerialized;
-    //             $fieldsSerialized = null;
-    //         }
-
-    //         if (! isset($this->allowedRelations[$name])) {
-    //             $this->paramException(
-    //                 "with",
-    //                 "Отношение \"{$name}\" отсутствует в списке разрешенных."
-    //             );
-    //         }
-
-    //         $allowedFields = explode(",", $this->allowedRelations[$name]);
-
-    //         if ($fieldsSerialized) {
-    //             $requestedFields = explode(",", $fieldsSerialized);
-    //             if (($deniedFields = array_diff($requestedFields, $allowedFields))) {
-    //                 $this->paramException(
-    //                     "with",
-    //                     sprintf("Поля %s отношения {$name} отсутствуют в списке разрешенных.", implode(", ", $deniedFields))
-    //                 );
-    //             }
-    //         } else {
-    //             $requestedFields = $allowedFields;
-    //         }
-
-    //         $relations[$name] = $requestedFields;
-    //     }
-
-    //     return new Relations($fields, $relations);
-    // }
 
     /**
      * @property Collection|Paginator
@@ -338,12 +314,12 @@ abstract class FindApiQuery
                 $class = get_called_class();
                 throw new RuntimeException("В $class отсутствует append метод $method");
             }
-            $methods[] = $method;
+            $methods[$name] = $method;
         }
 
         foreach ($results as $row) {
-            foreach ($methods as $method) {
-                $this->$method($row);
+            foreach ($methods as $appendedField => $method) {
+                $row->$appendedField = $this->$method($row);
             }
         }
     }
@@ -364,7 +340,7 @@ abstract class FindApiQuery
 
             if (! method_exists($this, $method)) {
                 $class  = get_called_class();
-                throw new RuntimeException("В $class отсутствует format метод $method");
+                throw new RuntimeException("В $class отсутствует format метод $method.");
             }
 
             $formatters[$field] = $method;

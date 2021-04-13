@@ -12,20 +12,13 @@ class DevTest extends TestCase
         $this->assertTrue(true);
         return;
 
-        $sql = [
-            "id" => "id",
-            "first_name" => "first_name",
-            "last_name" => "last_name",
-          
-        ];
+        $reg = "/^(?:
+            (sql|format|depends)(?:\:(.+))|(append)
+        )$/x";
 
-        $dependencies = [
-            "id" => "id",
-        ];
+        preg_match($reg, 'append', $match);
 
-        $hidden = array_diff($dependencies, $sql);
-
-        dd($hidden);
+        dd($match);
 
         // v3
 

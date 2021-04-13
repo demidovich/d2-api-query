@@ -10,9 +10,10 @@ class Fields
     private array $formats      = [];
     private array $appends      = [];
     private array $dependencies = [];
+    private array $hidden       = [];
 
     /**
-     * fullname   => append:first_name,last_name
+     * fullname   => append|depends:first_name,last_name
      * fullname   => sql:first_name || ' ' || last_name
      * created_at => sql:to_json(created_at)
      * updated_at => format:json_date
@@ -29,27 +30,36 @@ class Fields
 
         foreach ($segments as $segment) {
 
-            if (! preg_match("/^(sql|format|append)(?:\:(.+))$/", $segment, $match)) {
+            $reg = "/^(?:
+                (sql|format|depends)(?:\:(.+))|(append)
+            )$/x";
+
+            if (! preg_match($reg, $segment, $match)) {
                 throw new RuntimeException(
-                    sprintf('Некорректная конфигурация "%s" поля "%s".', $segment, $field)
+                    sprintf('Некорректная конфигурация поля "%s" "%s".', $field, $segment)
                 );
             }
 
-            $name    = $match[1];
+            $name    = empty($match[1]) ? $match[3] : $match[1];
             $options = $match[2];
 
-            if ($name == "sql") {
-                $this->addSql($field, $options);
-            }
-
-            elseif ($name == "format") {
-                $this->addFormat($field, $options);
-            }
-
-            elseif ($name == "append") {
-                $this->addAppend($field, $options);
+            switch ($name) {
+                case "sql":
+                    $this->addSql($field, $options);
+                    break;
+                case "format":
+                    $this->addFormat($field, $options);
+                    break;
+                case "append":
+                    $this->addAppend($field);
+                    break;
+                case "depends":
+                    $this->addDependencies($field, $options);
+                    break;
             }
         }
+
+        // Поле могло иметь атрибут format
 
         if (! isset($this->appends[$field]) && ! isset($this->sql[$field])) {
             $this->sql[$field] = $field;
@@ -78,21 +88,20 @@ class Fields
         $this->formats[$field] = $options;
     }
 
-    private function addAppend(string $field, ?string $options): void
+    private function addAppend(string $field): void
     {
         $this->appends[$field] = $field;
+    }
 
-        if (! $options) {
-            return;
-        }
-
-        if (! preg_match("/^[a-z0-9_]+(,[a-z0-9_]+)*$/i", $options)) {
+    private function addDependencies(string $field, string $serializedFields): void
+    {
+        if (! preg_match("/^[a-z\d_]+(,[a-z\d_]+)*$/i", $serializedFields)) {
             throw new RuntimeException(
-                sprintf('Некорректное значение параметра "append" поля "%s".', $field)
+                sprintf('Некорректное значение параметра "depends" поля "%s".', $field)
             );
         }
 
-        foreach (explode(",", $options) as $dependency) {
+        foreach (explode(",", $serializedFields) as $dependency) {
             $this->addDependency($dependency);
         }
     }
@@ -102,24 +111,36 @@ class Fields
         $this->dependencies[$field] = $field;
     }
 
+    /**
+     * @property mixed $field
+     */
+    public function hide($field): void
+    {
+        if (is_array($field)) {
+            foreach ($field as $f) {
+                $this->hidden[$f] = $f;
+            }
+        } else {
+            $this->hidden[$field] = $field;
+        }
+    }
+
     public function hidden(): array
     {
-        $hidden = [];
+        $hidden = $this->hidden;
 
-        if (! $this->dependencies) {
-            return $hidden;
-        }
-
-        $requested = $this->sql + $this->dependencies;
-
-        foreach ($this->dependencies as $k => $v) {
-            if (isset($requested[$k])) {
-                $hidden[] = $k;
+        if ($this->dependencies) {
+            $requested = $this->sql + $this->dependencies;
+            foreach ($this->dependencies as $k => $v) {
+                if (isset($requested[$k])) {
+                    $hidden[$k] = $k;
+                }
             }
         }
 
-        return $hidden;
+        return $hidden ? array_values($hidden) : [];
     }
+
 
     public function sql(): array
     {
@@ -145,6 +166,6 @@ class Fields
 
     public function has(string $field): bool
     {
-        return (isset($this->sql[$field]) || isset($this->appends[$field]));
+        return isset($this->sql[$field]) || isset($this->appends[$field]);
     }
 }
