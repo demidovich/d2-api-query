@@ -5,7 +5,7 @@ namespace Tests\Mock;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\JoinClause;
 
-class FindPersonRelationJoinQuery extends BaseQuery
+class FindPersonAppendsJoinQuery extends BaseQuery
 {
     protected string $sqlConnection = "default";
 
@@ -18,23 +18,29 @@ class FindPersonRelationJoinQuery extends BaseQuery
 
     protected function before(Builder $sql): void
     {
-        if ($this->hasRequestedField("city")) {
-            $this->joinCity($sql);
-        }
+        $this->joinCity($sql);
     }
 
     protected function cityAppend(object $row)
     {
-        $row->city = [
-            "id" => $row->city_id,
-            "name" => $row->city_name,
-        ];
+        if (isset($row->city_id)) {
+            return [
+                "id" => $row->city_id,
+                "name" => $row->city_name,
+            ];
+        }
+
+        return null;
     }
 
     private function joinCity(Builder $sql): void
     {
-        $sql->join("city", function (JoinClause $join) {
-            $join->where("city.id", "person.city_id");
+        if (! $this->hasRequestedField("city")) {
+            return;
+        }
+
+        $sql->leftJoin("city", function (JoinClause $join) {
+            $join->on("city.id", "=", "person.city_id");
         });
 
         $sql->addSelect([

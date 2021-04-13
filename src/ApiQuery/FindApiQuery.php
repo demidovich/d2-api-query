@@ -94,9 +94,8 @@ abstract class FindApiQuery
         $fields    = $this->fields;
         $relations = $this->relations;
 
-        $this->before($sql);
-
         $sql->select($fields->sql());
+        $this->before($sql);
         $results = $this->limitedResults($sql);
 
         if ($results->count() > 0) {
@@ -196,7 +195,7 @@ abstract class FindApiQuery
 
     private function fieldsInstance(array $allowedRaw, array $input): Fields
     {
-        $fields = new Fields();
+        $fields = new Fields($this->table);
 
         $allowed = [];
         foreach ($allowedRaw as $k => $v) {

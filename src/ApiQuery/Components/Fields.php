@@ -6,11 +6,17 @@ use RuntimeException;
 
 class Fields
 {
-    private array $sql          = [];
-    private array $formats      = [];
-    private array $appends      = [];
-    private array $dependencies = [];
-    private array $hidden       = [];
+    private string $table;
+    private array  $sql          = [];
+    private array  $formats      = [];
+    private array  $appends      = [];
+    private array  $dependencies = [];
+    private array  $hidden       = [];
+
+    public function __construct(string $table)
+    {
+        $this->table = $table;
+    }
 
     /**
      * fullname   => append|depends:first_name,last_name
@@ -148,7 +154,7 @@ class Fields
         $results = [];
 
         foreach ($fields as $field => $sql) {
-            $results[] = $field === $sql ? $field : "$sql as $field";
+            $results[] = $field === $sql ? "$this->table.$field" : "$sql as $field";
         }
 
         return $results;
