@@ -7,7 +7,7 @@ use Tests\Mock\FindPersonQuery;
 
 class FindCountTest extends TestCase
 {
-    public function test_not_set()
+    public function test_default()
     {
         $count   = $this->db()->table("person")->count();
         $results = $this->queryItems(FindPersonQuery::class);
@@ -15,7 +15,7 @@ class FindCountTest extends TestCase
         $this->assertEquals($count, count($results));
     }
 
-    public function test_set_all()
+    public function test_select_all()
     {
         $count   = $this->db()->table("person")->count();
         $results = $this->queryItems(FindPersonQuery::class, ["count" => 0]);
@@ -23,7 +23,7 @@ class FindCountTest extends TestCase
         $this->assertEquals($count, count($results));
     }
 
-    public function test_set_value()
+    public function test_select_value()
     {
         $results = $this->queryItems(FindPersonQuery::class, ["count" => 3]);
 

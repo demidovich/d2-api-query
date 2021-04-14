@@ -2,15 +2,14 @@
 
 namespace Tests\Mock;
 
-class FindPersonQuery extends BaseQuery
+class FindCityQuery extends BaseQuery
 {
     protected string $sqlConnection = "default";
 
-    protected string $table = "person";
+    protected string $table = "city";
 
     protected array $allowedFields = [
         "id",
-        "first_name",
-        "last_name",
+        "name",
     ];
 }

@@ -2,46 +2,50 @@
 
 namespace D2\ApiQuery;
 
+use D2\ApiQuery\Components\Fields;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 /**
- * ?created_at[leq]=2010-01-01&fields=id,name,role.id&sort[created_at]=asc
+ * fields=id,name
+ * with[city]=id,name
+ * with[]=city
+ * 
+ * $allowedFields = [
+ *     'id',
+ *     'created_at' => 'sql:to_json(created_at)'
+ * ]
  */
 abstract class FindApiQuery
 {
     protected  string  $sqlConnection;
     protected  string  $table;
     protected  array   $rules = [];
-    protected  array   $allowedFields = [];                 // ['field']
-    protected  array   $allowedAppends = [];                // ['field']
-    protected  array   $allowedAppendsDependencies = [];    // ['field']
-    protected  array   $allowedRelations = [];              // ['relation' => 'field1,field2']
-    protected  array   $hiddenFields = [];                  // ['field']
+    protected  array   $allowedFields = [];    // ['field'    => configuration ]
     protected  int     $maxCount = 1000;
     protected  int     $perPage  = 25;
 
-    private    Builder $sql;
-    private    array   $input = [];
-    private    array   $requestedFields = [];
-    private    array   $requestedAppends = [];
-    private    array   $requestedRelations = [];
+    private    Builder    $sql;
+    private    Fields     $fields;
+    private    array      $input = [];
 
     public function __construct(array $input, ...$params)
     {
         $rules = [
             'fields' => 'nullable|regex:/^[a-z\d_]+(?:,[a-z\d_]+)*$/',
-            'with'   => 'nullable|array',
-            'with.*' => 'required|regex:/^[a-z\d_]+(?:,[a-z\d_]+)*$/',
+          //'with'   => 'nullable|array',
+          //'with.*' => 'required|regex:/^[a-z\d_]+$/',
+          //'with.*' => 'required|regex:/^[a-z\d_]+(?:,[a-z\d_]+)*$/', // with[relation]=field1,field2
             'sort'   => 'nullable|array',
             'sort.*' => 'in:asc,desc',
             'count'  => 'nullable|int',
             'page'   => 'nullable|int',
-        ] + $this->queryRealisationRules();
+        ] + $this->rules();
 
         $validator = $this->validator($input, $rules);
 
@@ -50,12 +54,13 @@ abstract class FindApiQuery
         }
 
         $this->input = $validator->validated();
-        $this->sql   = Capsule::connection($this->sqlConnection)->table($this->table)->select();
+        $this->sql   = Capsule::connection($this->sqlConnection)->table($this->table);
 
-        $this->parseInput();
+        $this->fields = $this->fieldsInstance(
+            $this->allowedFields, 
+            $this->input
+        );
     }
-
-    protected abstract function validator(array $input, array $rules): Validator;
 
     public static function fromArray(array $input, ...$params): self
     {
@@ -64,30 +69,11 @@ abstract class FindApiQuery
         return new $class($input, $params);
     }
 
-    // public static function fromRequest(Request $request): self
-    // {
-    //     $class = get_called_class();
+    protected abstract function validator(array $input, array $rules): Validator;
 
-    //     return new $class($request);
-    // }
-
-    /**
-     * Если в реализации поиска существует метод rules()
-     * данные будут получены из него. Иначе будет использоваться
-     * атрибут rules
-     */
-    private function queryRealisationRules(): array
+    protected function rules(): array
     {
-        if (method_exists($this, 'rules')) {
-            $rules = $this->{'rules'}();
-            if (! is_array($rules)) {
-                return [];
-            }
-        } else {
-            $rules = $this->rules;
-        }
-
-        return $rules;
+        return $this->rules;
     }
 
     /**
@@ -95,58 +81,30 @@ abstract class FindApiQuery
      */
     public function results()
     {
-        $sql = $this->sql();
+        $sql    = $this->sql();
+        $fields = $this->fields;
 
-        $this->setFields($sql);
-        $this->setRelations($sql);
+        $sql->select($fields->sql());
         $this->before($sql);
-
         $results = $this->limitedResults($sql);
 
-        $this->setAppends($results);
-        $this->setHidden($results);
-        $this->after($results);
+        if ($results->count() > 0) {
+            $this->makeResultsAppends($results, $fields->appends());
+            $this->makeResultsFormats($results, $fields->formats());
+            $this->makeResultsRelations($results, $fields->relations());
+            $this->after($results);
+            $this->makeResultsHiddens($results, $fields->hidden());
+        }
 
         return $results;
     }
 
-    public function sql(): Builder
-    {
-        return $this->sql;
-    }
-
-    protected function before(Builder $sql): void
-    {
-
-    }
-
     /**
-     * @property Collection|Paginator $results
+     * @return Collection|Paginator
      */
-    protected function after($results): void
+    public function resultsBy(string $key)
     {
-
-    }
-
-    /**
-     * Были ли запрошено поле в параметре запроса fields.
-     */
-    protected function hasRequestedField(string $name): bool
-    {
-        return array_key_exists($name, $this->requestedFields) || array_key_exists($name, $this->requestedAppends);
-    }
-
-    /**
-     * Наличие во входных данных поля, описанного в rules.
-     *
-     * Метод полезен в одном случае: когда описано поле bool и нужно сделать
-     * проверку, что этот фильтр в запросе существует и он имеет значение false.
-     * В этом случает проверка if ($this->filter) в любом случае завершится
-     * неудачей.
-     */
-    protected function hasRequestedFilter(string $name): bool
-    {
-        return array_key_exists($name, $this->input);
+        return $this->results()->keyBy($key);
     }
 
     /**
@@ -169,235 +127,209 @@ abstract class FindApiQuery
         if ($count > $this->maxCount) {
             $this->paramException(
                 "count",
-                "Превышено максимальное значение count $this->maxCount."
+                "Превышено максимально допустимое значение count $this->maxCount."
             );
         }
 
         return $sql->limit($count)->get();
     }
 
-    /**
-     * Запрашиваемые поля
-     * Все fields без "." будут преобразованы в "table.field"
-     * Это нужно для безопасного выполнения join
-     */
-    private function setFields(Builder $sql): void
+    public function sql(): Builder
     {
-        $fields = $this->requestedFields();
-        $fields = $this->prefixableFields($this->table, array_unique($fields));
-
-        $sql->select($fields);
+        return $this->sql;
     }
 
-    private function prefixableFields(string $table, array $fields): array
+    public function fields(): Fields
     {
-        $results = [];
+        return $this->fields;
+    }
 
-        foreach ($fields as &$row) {
-            if (false === stripos($row, ".")) {
-                $results[] = "$table.$row";
+    public function setMaxCount(int $value): void
+    {
+        $this->maxCount = $value;
+    }
+
+    protected function before(Builder $sql): void
+    {
+
+    }
+
+    /**
+     * @property Collection|Paginator $results
+     */
+    protected function after($results): void
+    {
+
+    }
+
+    /**
+     * Были ли запрошено поле в параметре запроса fields.
+     */
+    protected function hasRequestedField(string $name): bool
+    {
+        return $this->fields->has($name);
+    }
+
+    /**
+     * Наличие во входных данных поля, описанного в rules.
+     *
+     * Метод полезен в одном случае: когда описано поле bool и нужно сделать
+     * проверку, что этот фильтр в запросе существует и он имеет значение false.
+     * В этом случает проверка if ($this->filter) в любом случае завершится
+     * неудачей.
+     */
+    protected function hasRequestedFilter(string $name): bool
+    {
+        return array_key_exists($name, $this->input);
+    }
+
+    private function fieldsInstance(array $allowedRaw, array $input): Fields
+    {
+        $fields = new Fields($this->table);
+
+        $allowed = [];
+        foreach ($allowedRaw as $k => $v) {
+            if (is_int($k)) {
+                $k = $v;
+                $v = null;
+            }
+            $allowed[$k] = $v;
+        }
+
+        if (! isset($input['fields'])) {
+            foreach ($allowed as $field => $config) {
+                $fields->add($field, $config);
+            }
+            return $fields;
+        }
+
+        $requested = array_unique(explode(',', $input['fields']));
+        $prepared  = [];
+        $denied    = [];
+
+        foreach ($requested as $field) {
+            if (array_key_exists($field, $allowed)) {
+                $prepared[$field] = $allowed[$field];
+            } else {
+                $denied[] = $field;
             }
         }
 
-        return $results;
+        if ($denied) {
+            $this->paramException(
+                "fields",
+                sprintf('Поля "%s" отсутствуют в списке разрешенных.', implode('", "', $denied))
+            );
+        }
+
+        foreach ($prepared as $field => $config) {
+            $fields->add($field, $config);
+        }
+
+        return $fields;
     }
 
     /**
-     * Запрашиваемые отношения
+     * @property Collection|Paginator
      */
-    private function setRelations(Builder $sql): void
+    private function makeResultsAppends($results, array $appends): void
     {
-        if (! $this->allowedRelations) {
-            return;
-        }
-
-        if (! $this->requestedRelations()) {
-            return;
-        }
-
-        $sql->with(
-            $this->requestedRelations()
-        );
-    }
-
-    /**
-     * Скрыть поле
-     */
-    protected function hideField(string $field): void
-    {
-        $this->hiddenFields[] = $field;
-    }
-
-    /**
-     * Добавление кастомных мутаторов модели к результатам запроса.
-     * Для этого в модели должны быть соответствующие getAttribute().
-     * В модели $appends указывать не нужно, иначе они будут присутствовать
-     * во всех результатах поиска модели.
-     * Appends будут динамически проинициализированы здесь на основе
-     * запрошенных полей.
-     *
-     * @param Collection|Paginator $results
-     */
-    private function setAppends($results): void
-    {
-        if (! $this->allowedAppends) {
-            return;
-        }
-
-        $appends = $this->requestedAppends();
-
         if (! $appends) {
             return;
         }
 
-        foreach ($results as $item) {
-            $item->setAppends($appends);
+        $methods = [];
+
+        foreach ($appends as $name) {
+            $method = $this->camelCase($name) . 'Append';
+            if (! method_exists($this, $method)) {
+                $class = get_called_class();
+                throw new RuntimeException("В $class отсутствует append метод $method");
+            }
+            $methods[$name] = $method;
         }
 
-        $hiddenDependencies = array_diff(
-            $this->allowedAppendsDependencies,
-            $this->allowedFields
-        );
-
-        $results->makeHidden($hiddenDependencies);
+        foreach ($results as $row) {
+            foreach ($methods as $appendedField => $method) {
+                $row->$appendedField = $this->$method($row);
+            }
+        }
     }
 
     /**
-     * Скрытие полей из полученных данных.
-     *
-     * @param Collection|Paginator $results
+     * @property Collection|Paginator
      */
-    private function setHidden($results): void
+    private function makeResultsFormats($results, array $formatFields): void
     {
-        if (! $this->hiddenFields) {
+        if (! $formatFields) {
             return;
         }
 
-        $results->makeHidden($this->hiddenFields);
+        $formatters = [];
+        foreach ($formatFields as $field => $formatter) {
+
+            $method = $this->camelCase($formatter) . 'Formatter';
+
+            if (! method_exists($this, $method)) {
+                $class  = get_called_class();
+                throw new RuntimeException("В $class отсутствует format метод $method.");
+            }
+
+            $formatters[$field] = $method;
+        }
+
+        foreach ($results as $row) {
+            foreach ($formatters as $field => $method) {
+                $row->$field = $this->$method($row->$field);
+            }
+        }
     }
 
     /**
-     * Парсинг запроса
-     * Выяснение необходимых полей, дополнительных атрибутов и связей
-     * Заполнение
-     *     requestedFields
-     *     requestedAppends
-     *     requestedRelations
+     * @property Collection|Paginator
      */
-    private function parseInput()
+    private function makeResultsRelations($results, array $relations): void
     {
-        // fields, appends
+        if (! $relations) {
+            return;
+        }
 
-        if (isset($this->input['fields'])) {
-            $inputFields = explode(',', $this->input['fields']);
-            $inputFields = array_unique($inputFields);
-            foreach ($inputFields as $field) {
-                if (in_array($field, $this->allowedFields)) {
-                    $fields[] = $field;
-                } elseif (in_array($field, $this->allowedAppends)) {
-                    $appends[] = $field;
-                } else {
-                    $this->paramException(
-                        "fields",
-                        "Некорректное значение параметра. Поле \"{$field}\" отсутствует в списке разрешенных."
-                    );
-                }
+        foreach ($relations as $relation) {
+
+            $method = $this->camelCase($relation) . 'Relation';
+
+            if (! method_exists($this, $method)) {
+                $class  = get_called_class();
+                throw new RuntimeException("В $class отсутствует relation метод $method");
             }
-        }
 
-        // Если на входе нет fields отдаем все доступные поля таблицы
-
-        else {
-            $fields  = $this->allowedFields;
-            $appends = $this->allowedAppends;
-        }
-
-        // relations
-
-        if (isset($this->input['with'])) {
-            $relations = $this->parseInputRelations($this->input['with']);
-        }
-
-        // Если на входе нет вообще ничего, ко всем доступным полям таблицы
-        // добавляем все доступные отношения
-
-        elseif(! isset($this->input['fields'])) {
-            if ($this->allowedRelations) {
-                foreach ($this->allowedRelations as $relationName => $relationFields) {
-                    $relations[] = "{$relationName}:{$relationFields}";
-                }
-            }
-        }
-
-        if ($this->allowedAppendsDependencies) {
-            $fields = array_merge($fields, $this->allowedAppendsDependencies);
-        }
-
-        if (! empty($fields)) {
-            $this->requestedFields = $fields;
-        }
-
-        if (! empty($appends)) {
-            $this->requestedAppends = $appends;
-        }
-
-        if (! empty($relations)) {
-            $this->requestedRelations = $relations;
+            $this->$method($results);
         }
     }
 
-    private function parseInputRelations(array $with): array
+    /**
+     * @property Collection|Paginator
+     */
+    private function makeResultsHiddens($results, array $fields): void
     {
-        $relations = [];
-
-        foreach ($with as $name => $fieldsString) {
-
-            // Во входных параметрах было
-            // with[]=название_отношения
-
-            if (is_int($name)) {
-                $this->paramException(
-                    "with",
-                    "Некорректное значение параметра. Пример корректного запроса with[relation]=field1,field2."
-                );
-            }
-
-            if (! isset($this->allowedRelations[$name])) {
-                $this->paramException(
-                    "with",
-                    "Некорректное значение параметра. Отношение \"{$name}\" отсутствует в списке разрешенных."
-                );
-            }
-
-            $fields  = explode(",", $fieldsString);
-            $allowed = explode(",", $this->allowedRelations[$name]);
-
-            if (($denied = array_diff($fields, $allowed))) {
-                $this->paramException(
-                    "with[$name]",
-                    sprintf("Поля %s запрещены", implode(", ", $denied))
-                );
-            }
-
-            $relations[] = $name.":".implode(",", $fields);
+        if (! $fields) {
+            return;
         }
 
-        return $relations;
+        // @todo optimize
+
+        foreach ($results as $row) {
+            foreach ($fields as $field) {
+                unset($row->$field);
+            }
+        }
     }
 
-    private function requestedFields(): array
+    private function camelCase(string $value): string
     {
-        return $this->requestedFields;
-    }
+        $value = ucwords(str_replace(['-', '_'], ' ', $value));
 
-    private function requestedAppends(): array
-    {
-        return $this->requestedAppends;
-    }
-
-    private function requestedRelations(): array
-    {
-        return $this->requestedRelations;
+        return lcfirst(str_replace(' ', '', $value));
     }
 
     private function paramException(string $param, string $message): void

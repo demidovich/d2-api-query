@@ -7,7 +7,7 @@ use Tests\Mock\FindPersonQuery;
 
 class FindFieldsTest extends TestCase
 {
-    public function test_not_set()
+    public function test_default()
     {
         $results = $this->queryFirstItem(FindPersonQuery::class);
 
@@ -15,7 +15,7 @@ class FindFieldsTest extends TestCase
         $this->assertEquals(3, count($results));
     }
 
-    public function test_set_one()
+    public function test_select()
     {
         $results = $this->queryFirstItem(FindPersonQuery::class, ["fields" => "id"]);
 
