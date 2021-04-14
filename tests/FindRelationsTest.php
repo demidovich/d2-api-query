@@ -18,8 +18,7 @@ class FindRelationsTest extends TestCase
     public function test_select()
     {
         $payload = [
-            "fields" => "id", 
-            "with" => ["city"]
+            "fields" => "id,city", 
         ];
 
         $results = $this->queryFirstItem(FindPersonRelationQuery::class, $payload);

@@ -13,10 +13,7 @@ class FindPersonRelationQuery extends BaseQuery
 
     protected array $allowedFields = [
         "id",
-    ];
-
-    protected array $allowedRelations = [
-        "city" => "depends:city_id",
+        "city" => "relation|depends:city_id"
     ];
 
     /**
@@ -36,7 +33,7 @@ class FindPersonRelationQuery extends BaseQuery
         //     ->setFields('id,name')
         //     ->to($results);
 
-        $ids = $results->pluck("city_id")->toArray();
+        $ids = $this->collectionField($results, "city_id");
 
         $cities = FindCityQuery::fromArray([
             'ids'    => $ids,
@@ -55,5 +52,15 @@ class FindPersonRelationQuery extends BaseQuery
         // foreach ($cities as $city) {
         //     $results->where("city_id", $city->id)->put("city", $city);
         // }
+    }
+
+    /**
+     * @property Collection|Paginator $results
+     */
+    private function collectionField($results, $field): array
+    {
+        $values = $results->pluck($field)->toArray();
+
+        return array_unique($values);
     }
 }

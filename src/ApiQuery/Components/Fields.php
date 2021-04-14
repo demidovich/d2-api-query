@@ -10,6 +10,7 @@ class Fields
     private array  $sql          = [];
     private array  $formats      = [];
     private array  $appends      = [];
+    private array  $relations    = [];
     private array  $dependencies = [];
     private array  $hidden       = [];
 
@@ -23,11 +24,12 @@ class Fields
      * fullname   => sql:first_name || ' ' || last_name
      * created_at => sql:to_json(created_at)
      * updated_at => format:json_date
+     * city       => relation|depends:city_id
      */
     public function add(string $field, ?string $config = null): void
     {
         if (! $config) {            
-            $this->sql[$field] = $field;
+            $this->addSql($field);
             return;
         }
 
@@ -37,7 +39,7 @@ class Fields
         foreach ($segments as $segment) {
 
             $reg = "/^(?:
-                (sql|format|depends)(?:\:(.+))|(append)
+                (sql|format|depends)(?:\:(.+))|(append|relation)
             )$/x";
 
             if (! preg_match($reg, $segment, $match)) {
@@ -59,44 +61,46 @@ class Fields
                 case "append":
                     $this->addAppend($field);
                     break;
+                case "relation":
+                    $this->addRelation($field);
+                    break;
                 case "depends":
                     $this->addDependencies($field, $options);
                     break;
             }
         }
 
-        // Поле могло иметь атрибут format
+        // Если поле имело параметр format оно еще не зарегистрировано
 
-        if (! isset($this->appends[$field]) && ! isset($this->sql[$field])) {
+        if (! $this->has($field)) {
             $this->sql[$field] = $field;
         }
     }
 
-    private function addSql(string $field, ?string $options): void
+    private function addSql(string $field, ?string $rawSql = null): void
     {
-        if (! $options) {
-            throw new RuntimeException(
-                sprintf('Некорректное значение параметра "sql" поля "%s".', $field)
-            );
-        }
-
-        $this->sql[$field] = $options;
+        $this->sql[$field] = $rawSql ? $rawSql : true;
     }
 
-    private function addFormat(string $field, ?string $options): void
+    private function addFormat(string $field, string $formatter): void
     {
-        if (! preg_match("/^[a-z\d_]+$/i", $options)) {
-            throw new RuntimeException(
-                sprintf('Некорректное значение параметра "format" поля "%s".', $field)
-            );
-        }
+        // if (! preg_match("/^[a-z\d_]+$/i", $formatter)) {
+        //     throw new RuntimeException(
+        //         sprintf('Некорректное значение параметра "format" поля "%s".', $field)
+        //     );
+        // }
 
-        $this->formats[$field] = $options;
+        $this->formats[$field] = $formatter;
     }
 
     private function addAppend(string $field): void
     {
-        $this->appends[$field] = $field;
+        $this->appends[$field] = true;
+    }
+
+    private function addRelation(string $field): void
+    {
+        $this->relations[$field] = true;
     }
 
     private function addDependencies(string $field, string $options): void
@@ -114,7 +118,7 @@ class Fields
 
     public function addDependency(string $field): void
     {
-        $this->dependencies[$field] = $field;
+        $this->dependencies[$field] = true;
     }
 
     /**
@@ -139,12 +143,12 @@ class Fields
             $requested = $this->sql + $this->dependencies;
             foreach ($this->dependencies as $k => $v) {
                 if (isset($requested[$k])) {
-                    $hidden[$k] = $k;
+                    $hidden[$k] = true;
                 }
             }
         }
 
-        return $hidden ? array_values($hidden) : [];
+        return $hidden ? array_keys($hidden) : [];
     }
 
 
@@ -153,11 +157,21 @@ class Fields
         $fields  = $this->sql + $this->dependencies;
         $results = [];
 
-        foreach ($fields as $field => $sql) {
-            $results[] = $field === $sql ? "$this->table.$field" : "$sql as $field";
+        foreach ($fields as $field => $rawSql) {
+            $results[] = $rawSql !== true ? "$rawSql as $field" : "$this->table.$field";
         }
 
         return $results;
+    }
+
+    public function appends(): array
+    {
+        return array_keys($this->appends);
+    }
+
+    public function relations(): array
+    {
+        return array_keys($this->relations);
     }
 
     public function formats(): array
@@ -165,13 +179,10 @@ class Fields
         return $this->formats;
     }
 
-    public function appends(): array
-    {
-        return $this->appends;
-    }
-
     public function has(string $field): bool
     {
-        return isset($this->sql[$field]) || isset($this->appends[$field]);
+        return isset($this->appends[$field]) 
+            || isset($this->relations[$field]) 
+            || isset($this->sql[$field]);
     }
 }

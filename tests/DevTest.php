@@ -12,13 +12,8 @@ class DevTest extends TestCase
         $this->assertTrue(true);
         return;
 
-        $reg = "/^(?:
-            (sql|format|depends)(?:\:(.+))|(append)
-        )$/x";
 
-        preg_match($reg, 'append', $match);
 
-        dd($match);
 
         // v3
 
@@ -74,5 +69,33 @@ class DevTest extends TestCase
         /x", $s, -1, PREG_SPLIT_DELIM_CAPTURE);
 
         dd($m);
+    }
+
+    private function measureStart()
+    {
+        $this->memoryStart = memory_get_usage();
+        $this->timeStart   = hrtime(true);
+    }
+
+    private function measureResults()
+    {
+        $memory = memory_get_usage() - $this->memoryStart;
+        $time   = hrtime(true) - $this->timeStart;
+
+        return [
+            'memory' => $this->bytesToHuman($memory),
+            'time'   => $time / 1e9,
+        ];
+    }
+
+    public static function bytesToHuman($bytes)
+    {
+        $units = ['b', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb'];
+    
+        for ($i = 0; $bytes > 1024; $i++) {
+            $bytes /= 1024;
+        }
+    
+        return round($bytes, 2) . ' ' . $units[$i];
     }
 }

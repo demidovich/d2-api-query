@@ -3,7 +3,6 @@
 namespace D2\ApiQuery;
 
 use D2\ApiQuery\Components\Fields;
-use D2\ApiQuery\Components\Relations;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Database\Query\Builder;
@@ -28,21 +27,19 @@ abstract class FindApiQuery
     protected  string  $table;
     protected  array   $rules = [];
     protected  array   $allowedFields = [];    // ['field'    => configuration ]
-    protected  array   $allowedRelations = []; // ['relation' => 'field1,field2']
     protected  int     $maxCount = 1000;
     protected  int     $perPage  = 25;
 
     private    Builder    $sql;
     private    Fields     $fields;
-    private    Relations  $relations;
     private    array      $input = [];
 
     public function __construct(array $input, ...$params)
     {
         $rules = [
             'fields' => 'nullable|regex:/^[a-z\d_]+(?:,[a-z\d_]+)*$/',
-            'with'   => 'nullable|array',
-            'with.*' => 'required|regex:/^[a-z\d_]+$/',
+          //'with'   => 'nullable|array',
+          //'with.*' => 'required|regex:/^[a-z\d_]+$/',
           //'with.*' => 'required|regex:/^[a-z\d_]+(?:,[a-z\d_]+)*$/', // with[relation]=field1,field2
             'sort'   => 'nullable|array',
             'sort.*' => 'in:asc,desc',
@@ -61,12 +58,6 @@ abstract class FindApiQuery
 
         $this->fields = $this->fieldsInstance(
             $this->allowedFields, 
-            $this->input
-        );
-
-        $this->relations = $this->relationsInstance(
-            $this->fields, 
-            $this->allowedRelations, 
             $this->input
         );
     }
@@ -90,9 +81,8 @@ abstract class FindApiQuery
      */
     public function results()
     {
-        $sql       = $this->sql();
-        $fields    = $this->fields;
-        $relations = $this->relations;
+        $sql    = $this->sql();
+        $fields = $this->fields;
 
         $sql->select($fields->sql());
         $this->before($sql);
@@ -101,7 +91,7 @@ abstract class FindApiQuery
         if ($results->count() > 0) {
             $this->makeResultsAppends($results, $fields->appends());
             $this->makeResultsFormats($results, $fields->formats());
-            $this->makeResultsRelations($results, $relations->all());
+            $this->makeResultsRelations($results, $fields->relations());
             $this->after($results);
             $this->makeResultsHiddens($results, $fields->hidden());
         }
@@ -237,63 +227,6 @@ abstract class FindApiQuery
         }
 
         return $fields;
-    }
-
-    private function relationsInstance(Fields $fields, array $allowed, array $input): Relations
-    {
-        $relations = new Relations($fields);
-
-        if (! isset($input['with']) && ! isset($input['fields'])) {
-            foreach ($allowed as $relation => $config) {
-                $relations->add($relation, $config);
-            }
-            return $relations;
-        }
-
-        if (! isset($input['with'])) {
-            return $relations;
-        }
-
-        $prepared = [];
-        $denied   = [];
-
-        foreach ($input['with'] as $relation) {
-            if (isset($this->allowedRelations[$relation])) {
-                $prepared[$relation] = $this->allowedRelations[$relation];
-            } else {
-                $denied[] = $relation;
-            }
-        }
-
-        // foreach ($input['with'] as $name => $fieldsSerialized) {
-
-        //     // Во входных параметрах было
-        //     // with[]=название_отношения
-
-        //     if (is_int($name)) {
-        //         $name = $fieldsSerialized;
-        //         $fieldsSerialized = null;
-        //     }
-
-        //     if (isset($this->allowedRelations[$name])) {
-        //         $prepared[$name] = $this->allowedRelations[$name];
-        //     } else {
-        //         $denied[] = $name;
-        //     }
-        // }
-
-        if ($denied) {
-            $this->paramException(
-                "with",
-                sprintf('Отношения "%s" отсутствуют в списке разрешенных.', implode('", "', $denied))
-            );
-        }
-
-        foreach ($prepared as $name => $config) {
-            $relations->add($name, $config);
-        }
-
-        return $relations;
     }
 
     /**
