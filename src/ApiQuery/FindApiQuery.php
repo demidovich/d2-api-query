@@ -57,7 +57,7 @@ abstract class FindApiQuery
         }
 
         $this->input = $validator->validated();
-        $this->sql   = Capsule::connection($this->sqlConnection)->table($this->table)->select();
+        $this->sql   = Capsule::connection($this->sqlConnection)->table($this->table);
 
         $this->fields = $this->fieldsInstance(
             $this->allowedFields, 

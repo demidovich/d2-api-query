@@ -99,15 +99,15 @@ class Fields
         $this->appends[$field] = $field;
     }
 
-    private function addDependencies(string $field, string $serializedFields): void
+    private function addDependencies(string $field, string $options): void
     {
-        if (! preg_match("/^[a-z\d_]+(,[a-z\d_]+)*$/i", $serializedFields)) {
+        if (! preg_match("/^[a-z\d_]+(,[a-z\d_]+)*$/i", $options)) {
             throw new RuntimeException(
                 sprintf('Некорректное значение параметра "depends" поля "%s".', $field)
             );
         }
 
-        foreach (explode(",", $serializedFields) as $dependency) {
+        foreach (explode(",", $options) as $dependency) {
             $this->addDependency($dependency);
         }
     }
