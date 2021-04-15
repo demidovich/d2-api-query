@@ -1,11 +1,12 @@
 <?php
 
-namespace Tests\Mock;
+namespace Tests\Mock\FindQueries;
 
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\JoinClause;
+use Tests\Mock\FindBaseQuery;
 
-class FindPersonAppendsJoinQuery extends BaseQuery
+class FindPersonAppendsJoinQuery extends FindBaseQuery
 {
     protected string $sqlConnection = "default";
 

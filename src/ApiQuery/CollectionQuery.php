@@ -3,6 +3,7 @@
 namespace D2\ApiQuery;
 
 use D2\ApiQuery\Components\Fields;
+use D2\ApiQuery\Contracts\FormatterContract;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Database\Query\Builder;
@@ -21,7 +22,7 @@ use RuntimeException;
  *     'created_at' => 'sql:to_json(created_at)'
  * ]
  */
-abstract class FindApiQuery
+abstract class CollectionQuery
 {
     protected  string  $sqlConnection;
     protected  string  $table;
@@ -70,6 +71,8 @@ abstract class FindApiQuery
     }
 
     protected abstract function validator(array $input, array $rules): Validator;
+
+    protected abstract function formatter(): FormatterContract;
 
     protected function rules(): array
     {
@@ -265,22 +268,18 @@ abstract class FindApiQuery
             return;
         }
 
-        $formatters = [];
-        foreach ($formatFields as $field => $formatter) {
+        $formatter = $this->formatter();
 
-            $method = $this->camelCase($formatter) . 'Formatter';
-
-            if (! method_exists($this, $method)) {
-                $class  = get_called_class();
-                throw new RuntimeException("В $class отсутствует format метод $method.");
+        foreach ($formatFields as $field => $method) {
+            if (! $formatter->has($method)) {
+                $class = get_called_class();
+                throw new RuntimeException("В $class для поля $field указан несуществующий format метод $method."); 
             }
-
-            $formatters[$field] = $method;
         }
 
         foreach ($results as $row) {
-            foreach ($formatters as $field => $method) {
-                $row->$field = $this->$method($row->$field);
+            foreach ($formatFields as $field => $method) {
+                $row->$field = $formatter->format($method, $row->$field);
             }
         }
     }

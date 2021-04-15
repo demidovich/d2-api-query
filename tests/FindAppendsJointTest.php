@@ -2,8 +2,8 @@
 
 namespace Tests;
 
-use Tests\Mock\FindPersonAppendsJoinQuery;
-use Tests\Mock\FindPersonAppendsQuery;
+use Tests\Mock\FindQueries\FindPersonAppendsJoinQuery;
+use Tests\Mock\FindQueries\FindPersonAppendsQuery;
 
 class FindAppendsJointTest extends TestCase
 {

@@ -2,7 +2,7 @@
 
 namespace Tests;
 
-use Tests\Mock\FindPersonFormattersQuery;
+use Tests\Mock\FindQueries\FindPersonFormattersQuery;
 
 class FindFormattersTest extends TestCase
 {

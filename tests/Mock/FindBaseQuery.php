@@ -2,16 +2,22 @@
 
 namespace Tests\Mock;
 
-use D2\ApiQuery\FindApiQuery;
+use D2\ApiQuery\Contracts\FormatterContract;
+use D2\ApiQuery\CollectionQuery;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Validation\Validator;
 
-class BaseQuery extends FindApiQuery
+class FindBaseQuery extends CollectionQuery
 {
     protected function validator(array $input, array $rules): Validator
     {
         return (new ValidatorFactory())->make($input, $rules);
+    }
+
+    protected function formatter(): FormatterContract
+    {
+        return new Formatter();        
     }
 
     // public static function fromRequest(Request $request): self

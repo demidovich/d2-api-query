@@ -1,8 +1,10 @@
 <?php
 
-namespace Tests\Mock;
+namespace Tests\Mock\FindQueries;
 
-class FindPersonFormattersQuery extends BaseQuery
+use Tests\Mock\FindBaseQuery;
+
+class FindPersonFormattersQuery extends FindBaseQuery
 {
     protected string $sqlConnection = "default";
 
@@ -12,9 +14,4 @@ class FindPersonFormattersQuery extends BaseQuery
         "id",
         "created_at" => "format:json_date"
     ];
-
-    protected function jsonDateFormatter($value)
-    {
-        return $value ? date("c", strtotime($value)) : null;
-    }
 }

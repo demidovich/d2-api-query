@@ -2,8 +2,8 @@
 
 namespace Tests;
 
-use Tests\Mock\FindPersonQuery;
-use Tests\Mock\FindPersonQueryConcept;
+use Tests\Mock\FindQueries\FindPersonQuery;
+use Tests\Mock\FindQueries\FindPersonQueryConcept;
 
 class DevTest extends TestCase
 {
@@ -11,9 +11,6 @@ class DevTest extends TestCase
     {
         $this->assertTrue(true);
         return;
-
-
-
 
         // v3
 

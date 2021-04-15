@@ -3,7 +3,7 @@
 namespace Tests;
 
 use Illuminate\Validation\ValidationException;
-use Tests\Mock\FindPersonQuery;
+use Tests\Mock\FindQueries\FindPersonQuery;
 
 class FindCountTest extends TestCase
 {

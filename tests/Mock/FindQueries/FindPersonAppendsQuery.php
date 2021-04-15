@@ -1,8 +1,10 @@
 <?php
 
-namespace Tests\Mock;
+namespace Tests\Mock\FindQueries;
 
-class FindPersonAppendsQuery extends BaseQuery
+use Tests\Mock\FindBaseQuery;
+
+class FindPersonAppendsQuery extends FindBaseQuery
 {
     protected string $sqlConnection = "default";
 

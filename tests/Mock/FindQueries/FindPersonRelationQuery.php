@@ -1,11 +1,12 @@
 <?php
 
-namespace Tests\Mock;
+namespace Tests\Mock\FindQueries;
 
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Support\Collection;
+use Tests\Mock\FindBaseQuery;
 
-class FindPersonRelationQuery extends BaseQuery
+class FindPersonRelationQuery extends FindBaseQuery
 {
     protected string $sqlConnection = "default";
 

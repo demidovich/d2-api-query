@@ -2,7 +2,7 @@
 
 namespace Tests;
 
-use Tests\Mock\FindPersonRelationQuery;
+use Tests\Mock\FindQueries\FindPersonRelationQuery;
 
 class FindRelationsTest extends TestCase
 {
