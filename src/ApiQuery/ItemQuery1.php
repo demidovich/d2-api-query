@@ -22,14 +22,14 @@ use RuntimeException;
  *     'created_at' => 'sql:to_json(created_at)'
  * ]
  */
-abstract class CollectionQuery
+abstract class ItemQuery1
 {
     protected  string  $sqlConnection;
     protected  string  $table;
-    protected  array   $rules = [];
+    // protected  array   $rules = [];
     protected  array   $allowedFields = [];    // ['field'    => configuration ]
-    protected  int     $maxCount = 1000;
-    protected  int     $perPage  = 25;
+    // protected  int     $maxCount = 1000;
+    // protected  int     $perPage  = 25;
 
     private    Builder    $sql;
     private    Fields     $fields;
@@ -37,18 +37,9 @@ abstract class CollectionQuery
 
     public function __construct(array $input, ...$params)
     {
-        $rules = [
-            'fields' => 'nullable|regex:/^[a-z\d_]+(?:,[a-z\d_]+)*$/',
-          //'with'   => 'nullable|array',
-          //'with.*' => 'required|regex:/^[a-z\d_]+$/',
-          //'with.*' => 'required|regex:/^[a-z\d_]+(?:,[a-z\d_]+)*$/', // with[relation]=field1,field2
-            'sort'   => 'nullable|array',
-            'sort.*' => 'in:asc,desc',
-            'count'  => 'nullable|int',
-            'page'   => 'nullable|int',
-        ] + $this->rules();
-
-        $validator = $this->validator($input, $rules);
+        $validator = $this->validator($input, [
+            'fields' => 'nullable|regex:/^[a-z\d_]+(?:,[a-z\d_]+)*$/'
+        ]);
 
         if ($validator->fails()) {
             throw new ValidationException($validator);
@@ -74,10 +65,10 @@ abstract class CollectionQuery
 
     protected abstract function formatter(): FormatterContract;
 
-    protected function rules(): array
-    {
-        return $this->rules;
-    }
+    // protected function rules(): array
+    // {
+    //     return $this->rules;
+    // }
 
     /**
      * @return Collection|Paginator
@@ -89,53 +80,60 @@ abstract class CollectionQuery
 
         $sql->select($fields->sql());
         $this->before($sql);
+
         $results = $this->limitedResults($sql);
 
         if ($results->count() > 0) {
-            $this->makeCollectionAppends($results, $fields->appends());
-            $this->makeCollectionFormats($results, $fields->formats());
-            $this->makeCollectionRelations($results, $fields->relations());
+
+            $appendMethods = $this->appendMethods($fields->appends());
+            $this->makeItemAppends($results, $appendMethods);
+
+            $this->ensureCorrectFormatters($fields->formats());
+            $this->makeItemFormats($results, $fields->formats());
+
+            //$this->makeItemRelations($results, $fields->relations());
+
             $this->after($results);
-            $this->makeCollectionHiddens($results, $fields->hidden());
+            $this->makeItemHiddens($results, $fields->hidden());
         }
 
         return $results;
     }
 
-    /**
-     * @return Collection|Paginator
-     */
-    public function resultsBy(string $key)
-    {
-        return $this->results()->keyBy($key);
-    }
+    // /**
+    //  * @return Collection|Paginator
+    //  */
+    // public function resultsBy(string $key)
+    // {
+    //     return $this->results()->keyBy($key);
+    // }
 
-    /**
-     * @return Collection|Paginator
-     */
-    private function limitedResults(Builder $sql)
-    {
-        $input = $this->input;
+    // /**
+    //  * @return Collection|Paginator
+    //  */
+    // private function limitedResults(Builder $sql)
+    // {
+    //     $input = $this->input;
 
-        if (! array_key_exists('count', $input)) {
-            return $sql->simplePaginate($this->perPage)->appends($input);
-        }
+    //     if (! array_key_exists('count', $input)) {
+    //         return $sql->simplePaginate($this->perPage)->appends($input);
+    //     }
 
-        $count = (int) $input['count'];
+    //     $count = (int) $input['count'];
 
-        if ($count < 1) {
-            $count = $this->maxCount;
-        }
+    //     if ($count < 1) {
+    //         $count = $this->maxCount;
+    //     }
 
-        if ($count > $this->maxCount) {
-            $this->paramException(
-                "count",
-                "Превышено максимально допустимое значение count $this->maxCount."
-            );
-        }
+    //     if ($count > $this->maxCount) {
+    //         $this->paramException(
+    //             "count",
+    //             "Превышено максимально допустимое значение count $this->maxCount."
+    //         );
+    //     }
 
-        return $sql->limit($count)->get();
-    }
+    //     return $sql->limit($count)->get();
+    // }
 
     public function sql(): Builder
     {
@@ -147,10 +145,10 @@ abstract class CollectionQuery
         return $this->fields;
     }
 
-    public function setMaxCount(int $value): void
-    {
-        $this->maxCount = $value;
-    }
+    // public function setMaxCount(int $value): void
+    // {
+    //     $this->maxCount = $value;
+    // }
 
     protected function before(Builder $sql): void
     {
@@ -173,18 +171,18 @@ abstract class CollectionQuery
         return $this->fields->has($name);
     }
 
-    /**
-     * Наличие во входных данных поля, описанного в rules.
-     *
-     * Метод полезен в одном случае: когда описано поле bool и нужно сделать
-     * проверку, что этот фильтр в запросе существует и он имеет значение false.
-     * В этом случает проверка if ($this->filter) в любом случае завершится
-     * неудачей.
-     */
-    protected function hasRequestedFilter(string $name): bool
-    {
-        return array_key_exists($name, $this->input);
-    }
+    // /**
+    //  * Наличие во входных данных поля, описанного в rules.
+    //  *
+    //  * Метод полезен в одном случае: когда описано поле bool и нужно сделать
+    //  * проверку, что этот фильтр в запросе существует и он имеет значение false.
+    //  * В этом случает проверка if ($this->filter) в любом случае завершится
+    //  * неудачей.
+    //  */
+    // protected function hasRequestedFilter(string $name): bool
+    // {
+    //     return array_key_exists($name, $this->input);
+    // }
 
     private function fieldsInstance(array $allowedRaw, array $input): Fields
     {
@@ -232,95 +230,85 @@ abstract class CollectionQuery
         return $fields;
     }
 
-    /**
-     * @property Collection|Paginator
-     */
-    private function makeCollectionAppends($results, array $appends): void
+    private function appendMethods(array $appends): array
     {
-        if (! $appends) {
-            return;
-        }
-
         $methods = [];
 
-        foreach ($appends as $name) {
-            $method = $this->camelCase($name) . 'Append';
+        foreach ($appends as $append) {
+            $method = $this->camelCase($append) . 'Append';
             if (! method_exists($this, $method)) {
                 $class = get_called_class();
                 throw new RuntimeException("В $class отсутствует append метод $method");
             }
-            $methods[$name] = $method;
+            $methods[$append] = $method;
         }
 
-        foreach ($results as $row) {
-            foreach ($methods as $appendedField => $method) {
-                $row->$appendedField = $this->$method($row);
-            }
-        }
+        return $methods;
     }
 
     /**
-     * @property Collection|Paginator
+     * @property object
      */
-    private function makeCollectionFormats($results, array $formatFields): void
+    private function makeItemAppends($item, array $appendMethods): void
     {
-        if (! $formatFields) {
+        foreach ($appendMethods as $appendedField => $method) {
+            $item->$appendedField = $this->$method($item);
+        }
+    }
+
+    private function ensureCorrectFormatters(array $formats): void
+    {
+        if (! $formats) {
             return;
         }
 
-        $formatter = $this->formatter();
-
-        foreach ($formatFields as $field => $method) {
-            if (! $formatter->has($method)) {
+        foreach ($formats as $field => $method) {
+            if (! $this->formatter()->has($method)) {
                 $class = get_called_class();
                 throw new RuntimeException("В $class для поля $field указан несуществующий format метод $method."); 
             }
         }
+    }
 
-        foreach ($results as $row) {
-            foreach ($formatFields as $field => $method) {
-                $row->$field = $formatter->format($method, $row->$field);
-            }
+    /**
+     * @property object
+     */
+    private function makeItemFormats($item, array $formatFields): void
+    {
+        foreach ($item as $field => $method) {
+            $item->$field = $this->formatter()->format($method, $item->$field);
         }
     }
+
+    // /**
+    //  * @property Collection|Paginator
+    //  */
+    // private function makeItemRelations($results, array $relations): void
+    // {
+    //     if (! $relations) {
+    //         return;
+    //     }
+
+    //     foreach ($relations as $relation) {
+
+    //         $method = $this->camelCase($relation) . 'Relation';
+
+    //         if (! method_exists($this, $method)) {
+    //             $class  = get_called_class();
+    //             throw new RuntimeException("В $class отсутствует relation метод $method");
+    //         }
+
+    //         $this->$method($results);
+    //     }
+    // }
 
     /**
      * @property Collection|Paginator
      */
-    private function makeCollectionRelations($results, array $relations): void
+    private function makeItemHiddens($item, array $fields): void
     {
-        if (! $relations) {
-            return;
-        }
-
-        foreach ($relations as $relation) {
-
-            $method = $this->camelCase($relation) . 'Relation';
-
-            if (! method_exists($this, $method)) {
-                $class  = get_called_class();
-                throw new RuntimeException("В $class отсутствует relation метод $method");
-            }
-
-            $this->$method($results);
-        }
-    }
-
-    /**
-     * @property Collection|Paginator
-     */
-    private function makeCollectionHiddens($results, array $fields): void
-    {
-        if (! $fields) {
-            return;
-        }
-
-        // @todo optimize
-
-        foreach ($results as $row) {
-            foreach ($fields as $field) {
-                unset($row->$field);
-            }
+        foreach ($fields as $field) {
+            unset($item->$field);
         }
     }
 
