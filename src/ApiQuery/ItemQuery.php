@@ -29,16 +29,18 @@ abstract class ItemQuery
 
     protected  string  $sqlConnection;
     protected  string  $table;
+    protected  string  $primaryKey;
     // protected  array   $rules = [];
     protected  array   $allowedFields = [];    // ['field'    => configuration ]
     // protected  int     $maxCount = 1000;
     // protected  int     $perPage  = 25;
 
-    private    Builder    $sql;
-    private    Fields     $fields;
-    private    array      $input = [];
+    private Builder $sql;
+    private Fields  $fields;
+    private array   $input;
+    private $key;
 
-    public function __construct(array $input, ...$params)
+    public function __construct(array $input, $key, ...$params)
     {
         $validator = $this->validator($input, [
             'fields' => 'nullable|regex:/^[a-z\d_]+(?:,[a-z\d_]+)*$/'
@@ -50,11 +52,17 @@ abstract class ItemQuery
 
         $this->input = $validator->validated();
         $this->sql   = Capsule::connection($this->sqlConnection)->table($this->table);
+        $this->key   = $key;
 
         $this->initFields(
             $this->allowedFields, 
             $this->input
         );
+    }
+
+    protected function keyName(): string
+    {
+        return "{$this->table}.{$this->primaryKey}";
     }
 
     public static function fromArray(array $input, ...$params): self
@@ -84,9 +92,9 @@ abstract class ItemQuery
         $sql->select($fields->sql());
         $this->before($sql);
 
-        $results = $this->limitedResults($sql);
+        $results = $sql->where($this->keyName(), $this->key)->first();
 
-        if ($results->count() > 0) {
+        if ($results) {
 
             $appendMethods = $this->appendMethods($fields->appends());
             $this->makeItemAppends($results, $appendMethods);
