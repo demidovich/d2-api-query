@@ -6,8 +6,6 @@ use Tests\Mock\FindBaseQuery;
 
 class FindPersonAppendsQuery extends FindBaseQuery
 {
-    protected string $sqlConnection = "default";
-
     protected string $table = "person";
 
     protected array $allowedFields = [

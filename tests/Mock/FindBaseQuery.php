@@ -10,6 +10,8 @@ use Illuminate\Validation\Validator;
 
 class FindBaseQuery extends CollectionQuery
 {
+    protected string $sqlConnection = "default";
+
     protected function validator(array $input, array $rules): Validator
     {
         return (new ValidatorFactory())->make($input, $rules);

@@ -10,6 +10,8 @@ use Illuminate\Validation\Validator;
 
 class ReadBaseQuery extends ItemQuery
 {
+    protected string $sqlConnection = "default";
+
     protected function validator(array $input, array $rules): Validator
     {
         return (new ValidatorFactory())->make($input, $rules);

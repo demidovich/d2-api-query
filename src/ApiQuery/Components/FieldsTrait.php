@@ -2,21 +2,9 @@
 
 namespace D2\ApiQuery\Components;
 
-trait Fieldable
+trait FieldsTrait
 {
-    private Fields $fields;
-
-    public function fields(): Fields
-    {
-        return $this->fields;
-    }
-
-    protected function hasRequestedField(string $name): bool
-    {
-        return $this->fields->has($name);
-    }
-
-    protected function initFields(array $allowedRaw, array $input): void
+    private function fieldsInstance(array $allowedRaw, array $input): Fields
     {
         $fields = new Fields($this->table);
 
@@ -33,8 +21,7 @@ trait Fieldable
             foreach ($allowed as $field => $config) {
                 $fields->add($field, $config);
             }
-            $this->fields = $fields;
-            return;
+            return $fields;
         }
 
         $requested = array_unique(explode(',', $input['fields']));
@@ -60,6 +47,6 @@ trait Fieldable
             $fields->add($field, $config);
         }
 
-        $this->fields = $fields;
+        return $fields;
     }
 }
