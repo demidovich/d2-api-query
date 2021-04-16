@@ -2,13 +2,13 @@
 
 namespace Tests;
 
-use Tests\Mock\FindQueries\FindPersonAppendsQuery;
+use Tests\Mock\FindQueries\FindPersonAdditionsQuery;
 
-class FindAppendsTest extends TestCase
+class FindAdditionsTest extends TestCase
 {
     public function test_default()
     {
-        $results = $this->queryFirstItem(FindPersonAppendsQuery::class);
+        $results = $this->queryFirstItem(FindPersonAdditionsQuery::class);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(2, count($results));
@@ -18,7 +18,7 @@ class FindAppendsTest extends TestCase
 
     public function test_select()
     {
-        $results = $this->queryFirstItem(FindPersonAppendsQuery::class, ["fields" => "id,fullname"]);
+        $results = $this->queryFirstItem(FindPersonAdditionsQuery::class, ["fields" => "id,fullname"]);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(2, count($results));
@@ -28,7 +28,7 @@ class FindAppendsTest extends TestCase
 
     public function test_not_select()
     {
-        $results = $this->queryFirstItem(FindPersonAppendsQuery::class, ["fields" => "id"]);
+        $results = $this->queryFirstItem(FindPersonAdditionsQuery::class, ["fields" => "id"]);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(1, count($results));

@@ -2,14 +2,14 @@
 
 namespace Tests;
 
-use Tests\Mock\FindQueries\FindPersonAppendsJoinQuery;
-use Tests\Mock\FindQueries\FindPersonAppendsQuery;
+use Tests\Mock\FindQueries\FindPersonAdditionsJoinQuery;
+use Tests\Mock\FindQueries\FindPersonAdditionsQuery;
 
-class FindAppendsJointTest extends TestCase
+class FindAdditionsJointTest extends TestCase
 {
     public function test_default()
     {
-        $results = $this->queryFirstItem(FindPersonAppendsJoinQuery::class);
+        $results = $this->queryFirstItem(FindPersonAdditionsJoinQuery::class);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(2, count($results));
@@ -19,7 +19,7 @@ class FindAppendsJointTest extends TestCase
 
     public function test_select()
     {
-        $results = $this->queryFirstItem(FindPersonAppendsJoinQuery::class, ["fields" => "id,city"]);
+        $results = $this->queryFirstItem(FindPersonAdditionsJoinQuery::class, ["fields" => "id,city"]);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(2, count($results));
@@ -29,7 +29,7 @@ class FindAppendsJointTest extends TestCase
 
     public function test_not_select()
     {
-        $results = $this->queryFirstItem(FindPersonAppendsQuery::class, ["fields" => "id"]);
+        $results = $this->queryFirstItem(FindPersonAdditionsQuery::class, ["fields" => "id"]);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(1, count($results));

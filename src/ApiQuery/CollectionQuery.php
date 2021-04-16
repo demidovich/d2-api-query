@@ -92,7 +92,7 @@ abstract class CollectionQuery
         $results = $this->limitedResults($sql);
 
         if ($results->count() > 0) {
-            $this->makeCollectionAppends($results, $fields->appends());
+            $this->makeCollectionAdditions($results, $fields->additions());
             $this->makeCollectionFormats($results, $fields->formats());
             $this->makeCollectionRelations($results, $fields->relations());
             $this->after($results);
@@ -235,26 +235,26 @@ abstract class CollectionQuery
     /**
      * @property Collection|Paginator
      */
-    private function makeCollectionAppends($results, array $appends): void
+    private function makeCollectionAdditions($results, array $additions): void
     {
-        if (! $appends) {
+        if (! $additions) {
             return;
         }
 
         $methods = [];
 
-        foreach ($appends as $name) {
-            $method = $this->camelCase($name) . 'Append';
+        foreach ($additions as $name) {
+            $method = $this->camelCase($name) . 'Addition';
             if (! method_exists($this, $method)) {
                 $class = get_called_class();
-                throw new RuntimeException("В $class отсутствует append метод $method");
+                throw new RuntimeException("В $class отсутствует addition метод $method");
             }
             $methods[$name] = $method;
         }
 
         foreach ($results as $row) {
-            foreach ($methods as $appendedField => $method) {
-                $row->$appendedField = $this->$method($row);
+            foreach ($methods as $additionField => $method) {
+                $row->$additionField = $this->$method($row);
             }
         }
     }

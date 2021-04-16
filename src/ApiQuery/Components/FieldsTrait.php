@@ -2,9 +2,12 @@
 
 namespace D2\ApiQuery\Components;
 
+use D2\ApiQuery\Contracts\FormatterContract;
+use RuntimeException;
+
 trait FieldsTrait
 {
-    private function fieldsInstance(array $allowedRaw, array $input): Fields
+    private function fieldsInstance(array $allowedRaw, FormatterContract $formatter, array $input): Fields
     {
         $fields = new Fields($this->table);
 
@@ -47,6 +50,46 @@ trait FieldsTrait
             $fields->add($field, $config);
         }
 
+        $this->ensureCorrectFormatters($fields, $formatter);
+        $this->ensureCorrectAdditions($fields);
+
         return $fields;
+    }
+
+    private function ensureCorrectFormatters(Fields $fields, FormatterContract $formatter): void
+    {
+        $formatters = $fields->formats();
+
+        if ($formatters) {
+            foreach ($formatters as $field => $method) {
+                if (! $formatter->has($method)) {
+                    $class = get_called_class();
+                    throw new RuntimeException("В $class для поля $field указан несуществующий format метод $method."); 
+                }
+            }
+        }
+    }
+
+    private function ensureCorrectAdditions(Fields $fields): void
+    {
+        foreach ($fields->additions() as $addition) {
+            $method = $this->additionMethod($addition);
+            if (! method_exists($this, $method)) {
+                $class = get_called_class();
+                throw new RuntimeException("В $class отсутствует addition метод $method");
+            }
+        }
+    }
+
+    protected function additionMethod(string $name): string
+    {
+        return $this->camelCase($name) . 'Addition';
+    }
+
+    private function camelCase(string $value): string
+    {
+        $value = ucwords(str_replace(['-', '_'], ' ', $value));
+
+        return lcfirst(str_replace(' ', '', $value));
     }
 }

@@ -14,7 +14,7 @@ class DevTest extends TestCase
 
         // v3
 
-        $s = "append|sql:first_name || ' ' || last_name|format:human_name|append|depends:first_name,last_name|append";
+        $s = "addition|sql:first_name || ' ' || last_name|format:human_name|addition|depends:first_name,last_name|addition";
 
         $s = preg_replace("/([a-z\d]{1})\s*\|\s*([a-z\d]{1})/i", "\\1~~~\\2", $s);
         $m = explode("~~~", $s);
@@ -23,14 +23,14 @@ class DevTest extends TestCase
 
         // v2
 
-        $s = "sql:first_name || ' ' || last_name|format:human_name|append|depends:first_name,last_name";
-        $s = "append||sql:first_name || ' ' || last_name|format:human_name|append|depends:first_name,last_name|append";
+        $s = "sql:first_name || ' ' || last_name|format:human_name|addition|depends:first_name,last_name";
+        $s = "addition||sql:first_name || ' ' || last_name|format:human_name|addition|depends:first_name,last_name|addition";
 
         preg_match_all('/
-            (sql|format|append|depends)
+            (sql|format|addition|depends)
             (?:
                 \:(.+?)?(?=
-                    (?:\|(?:sql|format|append|depends)|$)
+                    (?:\|(?:sql|format|addition|depends)|$)
                 )
             )?
         /x', $s, $matches);
@@ -42,9 +42,9 @@ class DevTest extends TestCase
 
         // v1
 
-        // $s = "append|depends:first_name,last_name";
+        // $s = "addition|depends:first_name,last_name";
         // $s = "sql:first_name || ' ' || last_name|format:human_name";
-        $s = "sql:first_name || ' ' || last_name|format:human_name|append|depends:first_name,last_name";
+        $s = "sql:first_name || ' ' || last_name|format:human_name|addition|depends:first_name,last_name";
 
         // array: [
         //     0 => ""
@@ -52,7 +52,7 @@ class DevTest extends TestCase
         //     2 => "first_name || ' ' || last_name"
         //     3 => "format"
         //     4 => "human_name"
-        //     5 => "append"
+        //     5 => "addition"
         //     6 => ""
         //     7 => "depends"
         //     8 => "first_name,last_name"
@@ -61,7 +61,7 @@ class DevTest extends TestCase
 
         $m = preg_split("/
         \|?
-        (sql|append|depends|format)
+        (sql|addition|depends|format)
         (?:\||:|$)
         /x", $s, -1, PREG_SPLIT_DELIM_CAPTURE);
 

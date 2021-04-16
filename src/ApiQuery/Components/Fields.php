@@ -9,7 +9,7 @@ class Fields
     private string $table;
     private array  $sql          = [];
     private array  $formats      = [];
-    private array  $appends      = [];
+    private array  $additions    = [];
     private array  $relations    = [];
     private array  $dependencies = [];
     private array  $hidden       = [];
@@ -20,7 +20,7 @@ class Fields
     }
 
     /**
-     * fullname   => append|depends:first_name,last_name
+     * fullname   => addition|depends:first_name,last_name
      * fullname   => sql:first_name || ' ' || last_name
      * created_at => sql:to_json(created_at)
      * updated_at => format:json_date
@@ -39,7 +39,7 @@ class Fields
         foreach ($segments as $segment) {
 
             $reg = "/^(?:
-                (sql|format|depends)(?:\:(.+))|(append|relation)
+                (sql|format|depends)(?:\:(.+))|(addition|relation)
             )$/x";
 
             if (! preg_match($reg, $segment, $match)) {
@@ -58,8 +58,8 @@ class Fields
                 case "format":
                     $this->addFormat($field, $options);
                     break;
-                case "append":
-                    $this->addAppend($field);
+                case "addition":
+                    $this->addAddition($field);
                     break;
                 case "relation":
                     $this->addRelation($field);
@@ -93,9 +93,9 @@ class Fields
         $this->formats[$field] = $formatter;
     }
 
-    private function addAppend(string $field): void
+    private function addAddition(string $field): void
     {
-        $this->appends[$field] = true;
+        $this->additions[$field] = true;
     }
 
     private function addRelation(string $field): void
@@ -164,9 +164,9 @@ class Fields
         return $results;
     }
 
-    public function appends(): array
+    public function additions(): array
     {
-        return array_keys($this->appends);
+        return array_keys($this->additions);
     }
 
     public function relations(): array
@@ -181,7 +181,7 @@ class Fields
 
     public function has(string $field): bool
     {
-        return isset($this->appends[$field]) 
+        return isset($this->additions[$field]) 
             || isset($this->relations[$field]) 
             || isset($this->sql[$field]);
     }

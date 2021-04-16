@@ -4,7 +4,6 @@ namespace D2\ApiQuery;
 
 use D2\ApiQuery\Components\Fields;
 use D2\ApiQuery\Components\FieldsTrait;
-use D2\ApiQuery\Components\ItemTrait;
 use D2\ApiQuery\Contracts\FormatterContract;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Database\Query\Builder;
@@ -14,7 +13,6 @@ use Illuminate\Validation\ValidationException;
 abstract class ItemQuery
 {
     use FieldsTrait;
-    use ItemTrait;
 
     protected string  $sqlConnection;
     protected string  $table;
@@ -31,6 +29,18 @@ abstract class ItemQuery
 
     protected abstract function formatter(): FormatterContract;
 
+    protected function boot(array $input): void
+    {
+        $this->sql   = Capsule::connection($this->sqlConnection)->table($this->table);
+        $this->input = $input;
+
+        $this->fields = $this->fieldsInstance(
+            $this->allowedFields, 
+            $this->formatter(),
+            $this->input
+        );
+    }
+
     public function __construct($key, array $input, ...$params)
     {
         $validator = $this->validator($input, [
@@ -41,14 +51,10 @@ abstract class ItemQuery
             throw new ValidationException($validator);
         }
 
-        $this->input = $validator->validated();
-
-        $this->fields = $this->fieldsInstance(
-            $this->allowedFields, 
-            $this->input
+        $this->boot(
+            $validator->validated()
         );
 
-        $this->sql = Capsule::connection($this->sqlConnection)->table($this->table);
         $this->key = $key;
     }
 
@@ -65,22 +71,36 @@ abstract class ItemQuery
 
         $this->before($query);
 
-        $item = $query->first();
-
-        if ($item) {
-            $appendMethods = $this->existingAppendMethods($fields);
-            $this->makeItemAppends($item, $appendMethods);
-
-            $this->ensureExistingFormatters($fields);
+        if (($item = $query->first())) {
+            $this->makeItemAdditions($item, $additionMethods);
             $this->makeItemFormats($item, $fields->formats());
-
-            //$this->makeItemRelations($results, $fields->relations());
-
             $this->after($item);
+          //$this->makeItemRelations($results, $fields->relations());
             $this->makeItemHiddens($item, $fields->hidden());
         }
 
         return $item;
+    }
+
+    protected function makeItemAdditions($item, array $additionMethods): void
+    {
+        foreach ($additionMethods as $newField => $method) {
+            $item->$newField = $this->$method($item);
+        }
+    }
+
+    protected function makeItemFormats($item, array $fieldMethods): void
+    {
+        foreach ($fieldMethods as $field => $method) {
+            $item->$field = $this->formatter()->format($method, $item->$field);
+        }
+    }
+
+    protected function makeItemHiddens($item, array $fields): void
+    {
+        foreach ($fields as $field) {
+            unset($item->$field);
+        }
     }
 
     public function sql(): Builder
