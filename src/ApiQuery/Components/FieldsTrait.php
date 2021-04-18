@@ -3,6 +3,9 @@
 namespace D2\ApiQuery\Components;
 
 use D2\ApiQuery\Contracts\FormatterContract;
+use D2\ApiQuery\Contracts\RelationContract;
+use ReflectionClass;
+use ReflectionMethod;
 use RuntimeException;
 
 trait FieldsTrait
@@ -12,7 +15,7 @@ trait FieldsTrait
 
     private function fieldsInstance(array $allowedRaw, FormatterContract $formatter, array $input): Fields
     {
-        $fields = new Fields($this->table);
+        $fields = new Fields();
 
         $allowed = [];
         foreach ($allowedRaw as $k => $v) {
@@ -86,13 +89,31 @@ trait FieldsTrait
 
     protected function initRelations(Fields $fields): void
     {
+        $relations = $fields->relations();
+        if (! $relations) {
+            return;
+        }
+
+        $class = new ReflectionClass($this);
+
         foreach ($fields->relations() as $relation) {
-            $method = $this->camelCase($relation) . 'Relation';
-            if (! method_exists($this, $method)) {
-                $class = get_called_class();
-                throw new RuntimeException("В $class отсутствует relation метод $method");
+
+            $methodName = $this->camelCase($relation) . 'Relation';
+            if (! $class->hasMethod($methodName)) {
+                throw new RuntimeException("В {$class->getName()} отсутствует relation метод $methodName");
             }
-            $this->relationMethods[$relation] = $method;
+
+            $method = $class->getMethod($methodName);
+            if (!  $method->hasReturnType()
+                || $method->getReturnType()->allowsNull()
+                || $method->getReturnType()->getName() !== RelationContract::class)
+            {
+                throw new RuntimeException(
+                    "В {$class->getName()} метод $methodName не декларирует возвращаемый тип " . RelationContract::class
+                );
+            }
+
+            $this->relationMethods[$relation] = $method->getName();
         }
     }
 
@@ -101,7 +122,7 @@ trait FieldsTrait
         return $this->additionMethods;
     }
 
-    protected function relationsMethods(): array
+    protected function relationMethods(): array
     {
         return $this->relationMethods;
     }

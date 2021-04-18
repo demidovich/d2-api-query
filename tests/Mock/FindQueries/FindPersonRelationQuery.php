@@ -2,13 +2,15 @@
 
 namespace Tests\Mock\FindQueries;
 
+use D2\ApiQuery\Contracts\RelationContract;
+use D2\ApiQuery\Relations\CollectionHasOne;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Tests\Mock\FindBaseQuery;
 
 class FindPersonRelationQuery extends FindBaseQuery
 {
-    protected string $table = "person";
+    protected ?string $table = "person";
 
     protected array $allowedFields = [
         "id",
@@ -18,39 +20,16 @@ class FindPersonRelationQuery extends FindBaseQuery
     /**
      * @property Collection|Paginator
      */
-    protected function cityRelation($results): void
+    protected function cityRelation($results): RelationContract
     {
-        // $this
-        //     ->hasOne(FindCityQuery::class, 'city_id', 'id')
-        //     ->setFields('id,name')
-        //     ->to($results);
-
-        // $this
-        //     ->hasOne(FindCityQuery::class)
-        //     ->setLocalKey('city_id')
-        //     ->setRelationKey('id')
-        //     ->setFields('id,name')
-        //     ->to($results);
-
         $ids = $this->collectionField($results, "city_id");
 
-        $cities = FindCityQuery::fromArray([
-            'ids'    => $ids,
-            'count'  => 0,
-            'fields' => 'id,name'
-        ])->resultsBy('id');
+        $relatedData = $this->sqlTable("city")->select([
+            "id",
+            "name"
+        ])->whereIn("id", $ids)->get();
 
-        foreach ($results as $row) {
-            $row->city = (isset($row->city_id) && isset($cities[$row->city_id])) ? $cities[$row->city_id] : null;
-        }
-
-        // foreach ($results as $row) {
-        //     $row->city = (isset($row->city_id) && isset($cities[$row->city_id])) ? $cities[$row->city_id] : null;
-        // }
-
-        // foreach ($cities as $city) {
-        //     $results->where("city_id", $city->id)->put("city", $city);
-        // }
+        return new CollectionHasOne($relatedData, "city_id", "id");
     }
 
     /**

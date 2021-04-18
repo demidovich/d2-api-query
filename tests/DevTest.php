@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use ReflectionClass;
 use Tests\Mock\FindQueries\FindPersonQuery;
 use Tests\Mock\FindQueries\FindPersonQueryConcept;
 

@@ -6,7 +6,6 @@ use RuntimeException;
 
 class Fields
 {
-    private string $table;
     private array  $sql          = [];
     private array  $formats      = [];
     private array  $additions    = [];
@@ -14,18 +13,14 @@ class Fields
     private array  $dependencies = [];
     private array  $hidden       = [];
 
-    public function __construct(string $table)
-    {
-        $this->table = $table;
-    }
-
-    public function toSql(): array
+    public function toSql(?string $table = null): array
     {
         $fields  = $this->sql + $this->dependencies;
+        $prefix  = $table ? "{$table}." : "";
         $results = [];
 
         foreach ($fields as $field => $rawSql) {
-            $results[] = $rawSql !== true ? "$rawSql as $field" : "$this->table.$field";
+            $results[] = $rawSql !== true ? "$rawSql as $field" : $prefix.$field;
         }
 
         return $results;

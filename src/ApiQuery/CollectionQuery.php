@@ -19,7 +19,7 @@ use Illuminate\Validation\ValidationException;
  */
 abstract class CollectionQuery extends ItemQuery
 {
-    protected array $rules = [];
+    protected array $rules    = [];
     protected int   $maxCount = 1000;
     protected int   $perPage  = 25;
 
@@ -52,20 +52,13 @@ abstract class CollectionQuery extends ItemQuery
         return new $class($input, $params);
     }
 
-    protected function rules(): array
-    {
-        return $this->rules;
-    }
-
     /**
      * @return Collection|Paginator
      */
     public function results()
     {
-        $sql    = $this->sql();
-        $fields = $this->fields;
+        $sql = $this->sql();
 
-        $sql->select($fields->toSql());
         $this->before($sql);
 
         $collection = $this->limitedCollection($sql);
@@ -81,13 +74,13 @@ abstract class CollectionQuery extends ItemQuery
         return $collection;
     }
 
-    /**
-     * @return Collection|Paginator
-     */
-    public function resultsBy(string $key)
-    {
-        return $this->results()->keyBy($key);
-    }
+    // /**
+    //  * @return Collection|Paginator
+    //  */
+    // public function resultsBy(string $key)
+    // {
+    //     return $this->results()->keyBy($key);
+    // }
 
     /**
      * @return Collection|Paginator
@@ -121,22 +114,6 @@ abstract class CollectionQuery extends ItemQuery
         $this->maxCount = $value;
     }
 
-    // /**
-    //  * @property Collection|Paginator $results
-    //  */
-    // protected function after($results): void
-    // {
-
-    // }
-
-    /**
-     * Были ли запрошено поле в параметре запроса fields.
-     */
-    protected function hasRequestedField(string $name): bool
-    {
-        return $this->fields->has($name);
-    }
-
     /**
      * Наличие во входных данных поля, описанного в rules.
      *
@@ -150,11 +127,10 @@ abstract class CollectionQuery extends ItemQuery
         return array_key_exists($name, $this->input);
     }
 
-
     /**
      * @property Collection|Paginator
      */
-    private function makeCollectionAdditions($results): void
+    protected function makeCollectionAdditions($results): void
     {
         $additions = $this->additionMethods();
 
@@ -172,7 +148,7 @@ abstract class CollectionQuery extends ItemQuery
     /**
      * @property Collection|Paginator
      */
-    private function makeCollectionFormats($results): void
+    protected function makeCollectionFormats($results): void
     {
         $formatFields = $this->fields->formats();
 
@@ -188,23 +164,24 @@ abstract class CollectionQuery extends ItemQuery
     /**
      * @property Collection|Paginator
      */
-    private function makeCollectionRelations($results): void
+    protected function makeCollectionRelations($results): void
     {
-        $relations = $this->relationsMethods();
+        $methods = $this->relationMethods();
 
-        if (! $relations) {
+        if (! $methods) {
             return;
         }
 
-        foreach ($relations as $method) {
-            $this->$method($results);
+        foreach ($methods as $field => $method) {
+            $relation = $this->$method($results);
+            $relation->to($results, $field);
         }
     }
 
     /**
      * @property Collection|Paginator
      */
-    private function makeCollectionHiddens($results): void
+    protected function makeCollectionHiddens($results): void
     {
         $hidden = $this->fields->hidden();
 
@@ -215,5 +192,10 @@ abstract class CollectionQuery extends ItemQuery
         foreach ($results as $item) {
             $this->makeItemHiddens($item, $hidden);
         }
+    }
+
+    protected function rules(): array
+    {
+        return $this->rules;
     }
 }

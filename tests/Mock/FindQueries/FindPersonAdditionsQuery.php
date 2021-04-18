@@ -6,7 +6,7 @@ use Tests\Mock\FindBaseQuery;
 
 class FindPersonAdditionsQuery extends FindBaseQuery
 {
-    protected string $table = "person";
+    protected ?string $table = "person";
 
     protected array $allowedFields = [
         "id",
