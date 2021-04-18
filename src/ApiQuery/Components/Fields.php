@@ -19,6 +19,18 @@ class Fields
         $this->table = $table;
     }
 
+    public function toSql(): array
+    {
+        $fields  = $this->sql + $this->dependencies;
+        $results = [];
+
+        foreach ($fields as $field => $rawSql) {
+            $results[] = $rawSql !== true ? "$rawSql as $field" : "$this->table.$field";
+        }
+
+        return $results;
+    }
+
     /**
      * fullname   => addition|depends:first_name,last_name
      * fullname   => sql:first_name || ' ' || last_name
@@ -149,19 +161,6 @@ class Fields
         }
 
         return $hidden ? array_keys($hidden) : [];
-    }
-
-
-    public function sql(): array
-    {
-        $fields  = $this->sql + $this->dependencies;
-        $results = [];
-
-        foreach ($fields as $field => $rawSql) {
-            $results[] = $rawSql !== true ? "$rawSql as $field" : "$this->table.$field";
-        }
-
-        return $results;
     }
 
     public function additions(): array

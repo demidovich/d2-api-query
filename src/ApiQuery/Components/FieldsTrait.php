@@ -7,6 +7,9 @@ use RuntimeException;
 
 trait FieldsTrait
 {
+    private array $additionMethods = [];
+    private array $relationMethods = [];
+
     private function fieldsInstance(array $allowedRaw, FormatterContract $formatter, array $input): Fields
     {
         $fields = new Fields($this->table);
@@ -51,7 +54,6 @@ trait FieldsTrait
         }
 
         $this->ensureCorrectFormatters($fields, $formatter);
-        $this->ensureCorrectAdditions($fields);
 
         return $fields;
     }
@@ -70,20 +72,38 @@ trait FieldsTrait
         }
     }
 
-    private function ensureCorrectAdditions(Fields $fields): void
+    protected function initAdditions(Fields $fields): void
     {
         foreach ($fields->additions() as $addition) {
-            $method = $this->additionMethod($addition);
+            $method = $this->camelCase($addition) . 'Addition';
             if (! method_exists($this, $method)) {
                 $class = get_called_class();
                 throw new RuntimeException("В $class отсутствует addition метод $method");
             }
+            $this->additionMethods[$addition] = $method;
         }
     }
 
-    protected function additionMethod(string $name): string
+    protected function initRelations(Fields $fields): void
     {
-        return $this->camelCase($name) . 'Addition';
+        foreach ($fields->relations() as $relation) {
+            $method = $this->camelCase($relation) . 'Relation';
+            if (! method_exists($this, $method)) {
+                $class = get_called_class();
+                throw new RuntimeException("В $class отсутствует relation метод $method");
+            }
+            $this->relationMethods[$relation] = $method;
+        }
+    }
+
+    protected function additionMethods(): array
+    {
+        return $this->additionMethods;
+    }
+
+    protected function relationsMethods(): array
+    {
+        return $this->relationMethods;
     }
 
     private function camelCase(string $value): string

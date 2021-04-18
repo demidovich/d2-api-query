@@ -39,6 +39,9 @@ abstract class ItemQuery
             $this->formatter(),
             $this->input
         );
+
+        $this->initAdditions($this->fields);
+        $this->initRelations($this->fields);
     }
 
     public function __construct($key, array $input, ...$params)
@@ -66,13 +69,13 @@ abstract class ItemQuery
         $query  = $this->sql;
         $fields = $this->fields;
 
-        $query->select($fields->sql());
+        $query->select($fields->toSql());
         $query->where("{$this->table}.{$this->primaryKey}", $this->key);
 
         $this->before($query);
 
         if (($item = $query->first())) {
-            $this->makeItemAdditions($item, $additionMethods);
+            $this->makeItemAdditions($item, $this->additionMethods());
             $this->makeItemFormats($item, $fields->formats());
             $this->after($item);
           //$this->makeItemRelations($results, $fields->relations());
@@ -82,16 +85,16 @@ abstract class ItemQuery
         return $item;
     }
 
-    protected function makeItemAdditions($item, array $additionMethods): void
+    protected function makeItemAdditions($item, array $methods): void
     {
-        foreach ($additionMethods as $newField => $method) {
-            $item->$newField = $this->$method($item);
+        foreach ($methods as $field => $method) {
+            $item->$field = $this->$method($item);
         }
     }
 
-    protected function makeItemFormats($item, array $fieldMethods): void
+    protected function makeItemFormats($item, array $formatters): void
     {
-        foreach ($fieldMethods as $field => $method) {
+        foreach ($formatters as $field => $method) {
             $item->$field = $this->formatter()->format($method, $item->$field);
         }
     }
@@ -106,6 +109,11 @@ abstract class ItemQuery
     public function sql(): Builder
     {
         return $this->sql;
+    }
+
+    public function fields(): Fields
+    {
+        return $this->fields;
     }
 
     protected function before(Builder $sql): void
