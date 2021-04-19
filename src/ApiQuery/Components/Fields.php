@@ -6,7 +6,7 @@ use RuntimeException;
 
 class Fields
 {
-    private array  $sql          = [];
+    private array  $sql          = []; // SQL table fields contains in the request param "fields="
     private array  $formats      = [];
     private array  $additions    = [];
     private array  $relations    = [];
@@ -78,6 +78,7 @@ class Fields
         }
 
         // Если поле имело параметр format оно еще не зарегистрировано
+        // Если его нет в sql, additions или relations
 
         if (! $this->has($field)) {
             $this->sql[$field] = $field;
