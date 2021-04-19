@@ -7,9 +7,9 @@ use Illuminate\Support\Collection;
 
 class CollectionHasOne implements RelationContract
 {
-    private $relatedData;
-    private $localKey;
-    private $relationKey;
+    protected $relatedData;
+    protected $localKey;
+    protected $relationKey;
 
     /**
      * @property Collection|array $relatedData

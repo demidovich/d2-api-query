@@ -2,13 +2,13 @@
 
 namespace Tests;
 
-use Tests\Mock\FindQueries\FindPersonRelationQuery;
+use Tests\Mock\FindQueries\FindPersonHasOneQuery;
 
-class FindRelationsTest extends TestCase
+class FindHasOneRelationTest extends TestCase
 {
     public function test_default()
     {
-        $results = $this->queryFirstItem(FindPersonRelationQuery::class);
+        $results = $this->queryFirstItem(FindPersonHasOneQuery::class);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(2, count($results));
@@ -21,7 +21,7 @@ class FindRelationsTest extends TestCase
             "fields" => "id,city", 
         ];
 
-        $results = $this->queryFirstItem(FindPersonRelationQuery::class, $payload);
+        $results = $this->queryFirstItem(FindPersonHasOneQuery::class, $payload);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(2, count($results));
@@ -34,7 +34,7 @@ class FindRelationsTest extends TestCase
             "fields" => "id", 
         ];
 
-        $results = $this->queryFirstItem(FindPersonRelationQuery::class, $payload);
+        $results = $this->queryFirstItem(FindPersonHasOneQuery::class, $payload);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(1, count($results));

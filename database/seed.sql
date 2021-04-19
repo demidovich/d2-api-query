@@ -49,4 +49,5 @@ insert into horse (
     name
 ) values 
     (1, 1, 'Snowball'),
-    (2, 2, 'Blackball');
+    (2, 1, 'Wolf'),
+    (3, 2, 'Blackball');

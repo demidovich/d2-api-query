@@ -4,10 +4,11 @@ namespace Tests\Mock\FindQueries;
 
 use D2\ApiQuery\Relations\CollectionHasOne;
 use Illuminate\Contracts\Pagination\Paginator;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Tests\Mock\FindBaseQuery;
 
-class FindPersonRelationQuery extends FindBaseQuery
+class FindPersonHasOneQuery extends FindBaseQuery
 {
     protected ?string $table = "person";
 
@@ -21,7 +22,7 @@ class FindPersonRelationQuery extends FindBaseQuery
      */
     protected function cityRelation($results): CollectionHasOne
     {
-        $ids = $this->collectionField($results, "city_id");
+        $ids = $this->pluckUnique($results, "city_id");
 
         $relatedData = $this->sqlTable("city")->select([
             "id",
@@ -31,13 +32,8 @@ class FindPersonRelationQuery extends FindBaseQuery
         return new CollectionHasOne($relatedData, "city_id", "id");
     }
 
-    /**
-     * @property Collection|Paginator $results
-     */
-    private function collectionField($results, $field): array
+    protected function before(Builder $sql): void
     {
-        $values = $results->pluck($field)->toArray();
-
-        return array_unique($values);
+        $sql->orderBy("id");
     }
 }

@@ -91,12 +91,6 @@ class Fields
 
     private function addFormat(string $field, string $formatter): void
     {
-        // if (! preg_match("/^[a-z\d_]+$/i", $formatter)) {
-        //     throw new RuntimeException(
-        //         sprintf('Некорректное значение параметра "format" поля "%s".', $field)
-        //     );
-        // }
-
         $this->formats[$field] = $formatter;
     }
 
@@ -147,9 +141,8 @@ class Fields
         $hidden = $this->hidden;
 
         if ($this->dependencies) {
-            $requested = $this->sql + $this->dependencies;
             foreach ($this->dependencies as $k => $v) {
-                if (isset($requested[$k])) {
+                if (! isset($this->sql[$k])) {
                     $hidden[$k] = true;
                 }
             }

@@ -55,12 +55,12 @@ abstract class ItemQuery
             $this->input
         );
 
-        $this->initAdditions($this->fields);
-        $this->initRelations($this->fields);
-        $this->initSql();
+        $this->registerAdditions($this->fields);
+        $this->registerRelations($this->fields);
+        $this->registerSqlFields();
     }
 
-    private function initSql(): void
+    private function registerSqlFields(): void
     {
         if ($this->table) {
             $this->sql = Capsule::connection($this->sqlConnection)->table($this->table);

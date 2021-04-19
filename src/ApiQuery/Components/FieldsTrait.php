@@ -5,7 +5,6 @@ namespace D2\ApiQuery\Components;
 use D2\ApiQuery\Contracts\FormatterContract;
 use D2\ApiQuery\Contracts\RelationContract;
 use ReflectionClass;
-use ReflectionMethod;
 use RuntimeException;
 
 trait FieldsTrait
@@ -75,7 +74,7 @@ trait FieldsTrait
         }
     }
 
-    protected function initAdditions(Fields $fields): void
+    protected function registerAdditions(Fields $fields): void
     {
         foreach ($fields->additions() as $addition) {
             $method = $this->camelCase($addition) . 'Addition';
@@ -87,7 +86,7 @@ trait FieldsTrait
         }
     }
 
-    protected function initRelations(Fields $fields): void
+    protected function registerRelations(Fields $fields): void
     {
         $relations = $fields->relations();
         if (! $relations) {

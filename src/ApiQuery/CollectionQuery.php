@@ -194,6 +194,18 @@ abstract class CollectionQuery extends ItemQuery
         }
     }
 
+    /**
+     * @property Collection|Paginator
+     */
+    protected function pluckUnique($collection, $field): array
+    {
+        return $collection
+            ->whereNotNull($field)
+            ->pluck($field)
+            ->unique()
+            ->toArray();
+    }
+
     protected function rules(): array
     {
         return $this->rules;
