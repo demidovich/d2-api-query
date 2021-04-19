@@ -2,10 +2,8 @@
 
 namespace D2\ApiQuery\Relations;
 
-use ArrayIterator;
 use D2\ApiQuery\Contracts\RelationContract;
 use Illuminate\Support\Collection;
-use RuntimeException;
 
 class CollectionHasOne implements RelationContract
 {
@@ -48,29 +46,25 @@ class CollectionHasOne implements RelationContract
         }
     }
 
-    private function relatedDataByKey($relatedData)
+    protected function relatedDataByKey($relatedData)
     {
         $relationKey = $this->relationKey;
+        $results = [];
 
-        if ($relatedData instanceof Collection) {
-            return $relatedData->whereNotNull($relationKey)->keyBy($relationKey);
-        }
-
-        if (is_array($relatedData) || $relatedData instanceof ArrayIterator) {
-            $results = [];
-            foreach ($relatedData as $row) {
-                if (empty($row->$relationKey)) {
-                    continue;
-                }
-                $results[$row->$relationKey] = $row;
+        foreach ($relatedData as $row) {
+            if (empty($row->$relationKey)) {
+                continue;
             }
-            return $results;
+            if (isset($results[$row->$relationKey])) {
+                continue;
+            }
+            $results[$row->$relationKey] = $row;
         }
 
-        throw new RuntimeException("Некорректниый тип relatedData.");
+        return $results;
     }
 
-    private function nullableRelation($item, $field): void
+    protected function nullableRelation($item, $field): void
     {
         $item->$field = null;
     }

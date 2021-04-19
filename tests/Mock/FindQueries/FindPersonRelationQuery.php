@@ -2,7 +2,6 @@
 
 namespace Tests\Mock\FindQueries;
 
-use D2\ApiQuery\Contracts\RelationContract;
 use D2\ApiQuery\Relations\CollectionHasOne;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Support\Collection;
@@ -20,7 +19,7 @@ class FindPersonRelationQuery extends FindBaseQuery
     /**
      * @property Collection|Paginator
      */
-    protected function cityRelation($results): RelationContract
+    protected function cityRelation($results): CollectionHasOne
     {
         $ids = $this->collectionField($results, "city_id");
 

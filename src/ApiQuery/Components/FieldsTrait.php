@@ -106,10 +106,10 @@ trait FieldsTrait
             $method = $class->getMethod($methodName);
             if (!  $method->hasReturnType()
                 || $method->getReturnType()->allowsNull()
-                || $method->getReturnType()->getName() !== RelationContract::class)
+                || ! class_implements($method->getReturnType()->getName(), RelationContract::class))
             {
                 throw new RuntimeException(
-                    "В {$class->getName()} метод $methodName не декларирует возвращаемый тип " . RelationContract::class
+                    "В {$class->getName()} метод $methodName не декларирует возвращаемый тип, реализующий " . RelationContract::class
                 );
             }
 
