@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase as BaseTestCase;
 class TestCase extends BaseTestCase
 {
     const PERSON_ID = 1;
+    const PERSON_ID_WITHOUT_CITY = 5;
 
     protected function setUp(): void
     {
