@@ -1,10 +1,10 @@
 <?php
 
-namespace Tests\Mock\FindQueries;
+namespace Tests\Mock\ReadQueries;
 
-use Tests\Mock\FindBaseQuery;
+use Tests\Mock\ReadBaseQuery;
 
-class FindPersonFormattersQuery extends FindBaseQuery
+class ReadFormatQuery extends ReadBaseQuery
 {
     protected ?string $table = "person";
     protected  string $primaryKey = "id";
