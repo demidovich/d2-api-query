@@ -28,7 +28,8 @@
         "squizlabs/php_codesniffer": "^3.5",
         "symfony/var-dumper": "^5.1",
         "illuminate/filesystem": "^8.35",
-        "illuminate/translation": "^8.35"
+        "illuminate/translation": "^8.35",
+        "vimeo/psalm": "^4.7"
     },
     "minimum-stability": "dev",
     "prefer-stable": true
