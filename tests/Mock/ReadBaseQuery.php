@@ -3,12 +3,12 @@
 namespace Tests\Mock;
 
 use D2\ApiQuery\Contracts\FormatterContract;
-use D2\ApiQuery\CollectionQuery;
+use D2\ApiQuery\ItemQuery;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Validation\Validator;
 
-class FindBaseQuery extends CollectionQuery
+class ReadBaseQuery extends ItemQuery
 {
     protected string $sqlConnection = "default";
 

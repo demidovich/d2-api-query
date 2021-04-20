@@ -6,21 +6,28 @@ use RuntimeException;
 
 class Fields
 {
-    private string $table;
-    private array  $sql          = [];
+    private array  $sql          = []; // SQL table fields contains in the request param "fields="
     private array  $formats      = [];
-    private array  $appends      = [];
+    private array  $additions    = [];
     private array  $relations    = [];
     private array  $dependencies = [];
     private array  $hidden       = [];
 
-    public function __construct(string $table)
+    public function toSql(?string $table = null): array
     {
-        $this->table = $table;
+        $fields  = $this->sql + $this->dependencies;
+        $prefix  = $table ? "{$table}." : "";
+        $results = [];
+
+        foreach ($fields as $field => $rawSql) {
+            $results[] = $rawSql !== true ? "$rawSql as $field" : $prefix.$field;
+        }
+
+        return $results;
     }
 
     /**
-     * fullname   => append|depends:first_name,last_name
+     * fullname   => addition|depends:first_name,last_name
      * fullname   => sql:first_name || ' ' || last_name
      * created_at => sql:to_json(created_at)
      * updated_at => format:json_date
@@ -39,7 +46,7 @@ class Fields
         foreach ($segments as $segment) {
 
             $reg = "/^(?:
-                (sql|format|depends)(?:\:(.+))|(append|relation)
+                (sql|format|depends)(?:\:(.+))|(addition|relation)
             )$/x";
 
             if (! preg_match($reg, $segment, $match)) {
@@ -58,8 +65,8 @@ class Fields
                 case "format":
                     $this->addFormat($field, $options);
                     break;
-                case "append":
-                    $this->addAppend($field);
+                case "addition":
+                    $this->addAddition($field);
                     break;
                 case "relation":
                     $this->addRelation($field);
@@ -71,6 +78,7 @@ class Fields
         }
 
         // Если поле имело параметр format оно еще не зарегистрировано
+        // Если его нет в sql, additions или relations
 
         if (! $this->has($field)) {
             $this->sql[$field] = $field;
@@ -84,18 +92,12 @@ class Fields
 
     private function addFormat(string $field, string $formatter): void
     {
-        // if (! preg_match("/^[a-z\d_]+$/i", $formatter)) {
-        //     throw new RuntimeException(
-        //         sprintf('Некорректное значение параметра "format" поля "%s".', $field)
-        //     );
-        // }
-
         $this->formats[$field] = $formatter;
     }
 
-    private function addAppend(string $field): void
+    private function addAddition(string $field): void
     {
-        $this->appends[$field] = true;
+        $this->additions[$field] = true;
     }
 
     private function addRelation(string $field): void
@@ -140,9 +142,8 @@ class Fields
         $hidden = $this->hidden;
 
         if ($this->dependencies) {
-            $requested = $this->sql + $this->dependencies;
             foreach ($this->dependencies as $k => $v) {
-                if (isset($requested[$k])) {
+                if (! isset($this->sql[$k])) {
                     $hidden[$k] = true;
                 }
             }
@@ -151,22 +152,9 @@ class Fields
         return $hidden ? array_keys($hidden) : [];
     }
 
-
-    public function sql(): array
+    public function additions(): array
     {
-        $fields  = $this->sql + $this->dependencies;
-        $results = [];
-
-        foreach ($fields as $field => $rawSql) {
-            $results[] = $rawSql !== true ? "$rawSql as $field" : "$this->table.$field";
-        }
-
-        return $results;
-    }
-
-    public function appends(): array
-    {
-        return array_keys($this->appends);
+        return array_keys($this->additions);
     }
 
     public function relations(): array
@@ -181,7 +169,7 @@ class Fields
 
     public function has(string $field): bool
     {
-        return isset($this->appends[$field]) 
+        return isset($this->additions[$field]) 
             || isset($this->relations[$field]) 
             || isset($this->sql[$field]);
     }

@@ -2,91 +2,119 @@
 
 namespace D2\ApiQuery\Relations;
 
+use D2\ApiQuery\Contracts\RelationContract;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use RuntimeException;
 
-class HasOne
+class HasOne implements RelationContract
 {
-    private  string $queryClass;
-    private  string $localKey;
-    private  string $relationKey;
-    private ?string $fields = null;
-    private ?int    $maxCount = null;
-
-    public function __construct(string $queryClass)
-    {
-        $this->queryClass = $queryClass;        
-    }
-
-    public function setLocalKey(string $field): self
-    {
-        $this->localKey = $field;
-        return $this;
-    }
-
-    public function setRelationKey(string $field): self
-    {
-        $this->relationKey = $field;
-        return $this;
-    }
-
-    public function setFields(string $fields): self
-    {
-        $this->relationKey = $fields;
-        return $this;
-    }
-
-    public function setMaxCount(int $value): self
-    {
-        $this->maxCount = $value;
-        return $this;
-    }
+    protected $relatedData;
+    protected $localKey;
+    protected $relationKey;
+    protected bool $belongsToCollection;
 
     /**
-     * @property Collection|Paginator
+     * @property Collection|array $relatedData
+     * @property string|integer $localKey
+     * @property string|integer $relationKey
      */
-    public function to($results)
+    public function __construct($relatedData, $localKey, $relationKey)
     {
-        $queryClass  = $this->queryClass;
-        $localKey    = $this->localKey();
-        $relationKey = $this->relationKey();
-
-        $ids = $results->pluck($localKey)->toArray();
-
-        $query = $queryClass::fromArray([
-            'ids'    => $ids,
-            'count'  => 0,
-            'fields' => $this->fields
-        ]);
-
-        if ($this->maxCount) {
-            $query->setMaxCount($this->maxCount);
-        }
-
-        $relationItems = $query->resultsBy($relationKey);
-
-        foreach ($results as $row) {
-            $row->city = (isset($row->city_id) && isset($cities[$row->city_id])) ? $cities[$row->city_id] : null;
-        }
-
+        $this->localKey    = $localKey;
+        $this->relationKey = $relationKey;
+        $this->relatedData = $this->relatedDataByKey($relatedData);
     }
 
-    private function localKey()
+    public function to($results, string $field): void
     {
-        if (property_exists($this, 'localKey')) {
-            return $this->localKey;
+        if ($this->isItem($results)) {
+            $this->toItem($results, $field);
+        } else {
+            $this->toCollection($results, $field);
         }
-
-        throw new RuntimeException("Отсутствует параметр отношения localKey. Не был вызван setLocalKey().");
     }
 
-    private function relationKey()
+    private function toItem($results, string $field): void
     {
-        if (property_exists($this, 'relationKey')) {
-            return $this->localKey;
+        $lokalKeyName = $this->localKey;
+        $relatedByKey = $this->relatedData;
+        $key = $results->$lokalKeyName;
+
+        if (isset($relatedByKey[$key])) {
+            $results->$field = $relatedByKey[$key];
+        } else {
+            $this->nullableRelation($results, $field);
+        }
+    }
+
+    private function toCollection($results, string $field): void
+    {
+        $lokalKeyName = $this->localKey;
+        $relatedByKey = $this->relatedData;
+
+        foreach ($results as $item) {
+           
+            if (! isset($item->$lokalKeyName)) {
+                $this->nullableRelation($item, $field);
+                continue;
+            }
+
+            $key = $item->$lokalKeyName;
+
+            if (! isset($relatedByKey[$key])) {
+                $this->nullableRelation($item, $field);
+                continue;
+            }
+
+            $item->$field = $relatedByKey[$key];
+        }
+    }
+
+    protected function relatedDataByKey($relatedData)
+    {
+        $results = [];
+        $relationKey = $this->relationKey;
+
+        if (! $relatedData) {
+            return $results;
         }
 
-        throw new RuntimeException("Отсутствует параметр отношения relationKey. Не был вызван setRelationKey().");
+        if ($this->isItem($relatedData)) {
+            if (! isset($relatedData->$relationKey)) {
+                throw new RuntimeException("В relatedData отсутствует поле внешнего ключа.");
+            }
+            $results[$relatedData->$relationKey] = $relatedData;
+            return $results;
+        }
+
+        foreach ($relatedData as $row) {
+            if (empty($row->$relationKey)) {
+                continue;
+            }
+            if (isset($results[$row->$relationKey])) {
+                continue;
+            }
+            $results[$row->$relationKey] = $row;
+        }
+
+        return $results;
+    }
+
+    protected function nullableRelation($item, $field): void
+    {
+        $item->$field = null;
+    }
+
+    protected function isItem($results): bool
+    {
+        return ! $this->isCollection($results);
+    }
+
+    protected function isCollection($results): bool
+    {
+        return $results instanceof Collection 
+            || $results instanceof Paginator 
+            || is_array($results);
     }
 }

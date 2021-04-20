@@ -6,15 +6,14 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\JoinClause;
 use Tests\Mock\FindBaseQuery;
 
-class FindPersonAppendsJoinQuery extends FindBaseQuery
+class FindAdditionPrefixQuery extends FindBaseQuery
 {
-    protected string $sqlConnection = "default";
-
-    protected string $table = "person";
+    protected ?string $table = "person";
+    protected  string $primaryKey = "id";
 
     protected array $allowedFields = [
         "id",
-        "city" => "append",
+        "city" => "addition",
     ];
 
     protected function before(Builder $sql): void
@@ -22,7 +21,7 @@ class FindPersonAppendsJoinQuery extends FindBaseQuery
         $this->joinCity($sql);
     }
 
-    protected function cityAppend(object $row)
+    protected function cityAddition(object $row)
     {
         if (isset($row->city_id)) {
             return [
