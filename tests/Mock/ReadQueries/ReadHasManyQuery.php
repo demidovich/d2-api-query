@@ -22,11 +22,15 @@ class ReadHasManyQuery extends ReadBaseQuery
      */
     protected function horseRelation($results): HasMany
     {
-        $relatedData = $this->sqlTable("horse")->select([
-            "id",
-            "name",
-            "person_id"
-        ])->orderBy("name")->where("person_id", $results->id)->get();
+        if (isset($results->id)) {
+            $relatedData = $this->sqlTable("horse")->select([
+                "id",
+                "name",
+                "person_id"
+            ])->orderBy("name")->where("person_id", $results->id)->get();
+        } else {
+            $relatedData = [];
+        }
 
         return new HasMany($relatedData, "id", "person_id");
     }

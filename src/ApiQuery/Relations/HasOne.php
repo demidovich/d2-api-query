@@ -5,6 +5,7 @@ namespace D2\ApiQuery\Relations;
 use D2\ApiQuery\Contracts\RelationContract;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Support\Collection;
+use RuntimeException;
 
 class HasOne implements RelationContract
 {
@@ -72,8 +73,20 @@ class HasOne implements RelationContract
 
     protected function relatedDataByKey($relatedData)
     {
-        $relationKey = $this->relationKey;
         $results = [];
+        $relationKey = $this->relationKey;
+
+        if (! $relatedData) {
+            return $results;
+        }
+
+        if ($this->isItem($relatedData)) {
+            if (! isset($relatedData->$relationKey)) {
+                throw new RuntimeException("В relatedData отсутствует поле внешнего ключа.");
+            }
+            $results[$relatedData->$relationKey] = $relatedData;
+            return $results;
+        }
 
         foreach ($relatedData as $row) {
             if (empty($row->$relationKey)) {

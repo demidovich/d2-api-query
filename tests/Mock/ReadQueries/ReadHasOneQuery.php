@@ -1,35 +1,31 @@
 <?php
 
-namespace Tests\Mock\FindQueries;
+namespace Tests\Mock\ReadQueries;
 
 use D2\ApiQuery\Relations\HasOne;
-use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Collection;
-use Tests\Mock\FindBaseQuery;
+use Tests\Mock\ReadBaseQuery;
 
-class FindPersonHasOneQuery extends FindBaseQuery
+class ReadHasOneQuery extends ReadBaseQuery
 {
     protected ?string $table = "person";
     protected  string $primaryKey = "id";
-
 
     protected array $allowedFields = [
         "id",
         "city" => "relation|depends:city_id"
     ];
 
-    /**
-     * @property Collection|Paginator
-     */
     protected function cityRelation($results): HasOne
     {
-        $ids = $this->pluckUnique($results, "city_id");
+        $relatedData = null;
 
-        $relatedData = $this->sqlTable("city")->select([
-            "id",
-            "name"
-        ])->whereIn("id", $ids)->get();
+        if (isset($results->city_id)) {
+            $relatedData = $this->sqlTable("city")->select([
+                "id",
+                "name"
+            ])->where("id", $results->city_id)->first();
+        }
 
         return new HasOne($relatedData, "city_id", "id");
     }

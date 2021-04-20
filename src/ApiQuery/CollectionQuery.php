@@ -74,14 +74,6 @@ abstract class CollectionQuery extends ItemQuery
         return $collection;
     }
 
-    // /**
-    //  * @return Collection|Paginator
-    //  */
-    // public function resultsBy(string $key)
-    // {
-    //     return $this->results()->keyBy($key);
-    // }
-
     /**
      * @return Collection|Paginator
      */
