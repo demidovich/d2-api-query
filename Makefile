@@ -24,7 +24,7 @@ build: ## Build docker images
 	$(docker_compose_bin) build
 
 clean: ## Remove images
-	-$(docker_compose_bin) down -v
+	$(docker_compose_bin) down -v
 	$(foreach image,$(all_images),$(docker_bin) rmi -f $(image);)
 
 # --- [ Development tasks ] -------------------------------------------------------------------------------------------
@@ -47,6 +47,7 @@ test-phpunit: ## Run phpunit tests
 
 test-coverage: ## Run phpunit coverage tests
 	$(docker_compose_bin) exec fpm php -dextension=xdebug.so -dxdebug.mode=coverage /app/vendor/bin/phpunit --colors=always --coverage-text --coverage-clover coverage.clover
+	$(docker_compose_bin) exec fpm sed -i 's/\/app\/src/.\/src/' ./coverage.clover
 
 postgres: ## Shell of postgresql container
 	$(docker_compose_bin) exec --user root postgres /bin/bash
