@@ -1,13 +1,13 @@
 <?php
 
-namespace Tests\Mock\FindQueries;
+namespace Tests\Mock\ReadQueries;
 
 use D2\ApiQuery\Relations\HasMany;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Support\Collection;
-use Tests\Mock\FindBaseQuery;
+use Tests\Mock\ReadBaseQuery;
 
-class FindPersonHasManyQuery extends FindBaseQuery
+class ReadHasManyQuery extends ReadBaseQuery
 {
     protected ?string $table = "person";
     protected  string $primaryKey = "id";
@@ -22,13 +22,11 @@ class FindPersonHasManyQuery extends FindBaseQuery
      */
     protected function horseRelation($results): HasMany
     {
-        $ids = $this->pluckUnique($results, "id");
-
         $relatedData = $this->sqlTable("horse")->select([
             "id",
             "name",
             "person_id"
-        ])->orderBy("name")->whereIn("person_id", $ids)->get();
+        ])->orderBy("name")->where("person_id", $results->id)->get();
 
         return new HasMany($relatedData, "id", "person_id");
     }

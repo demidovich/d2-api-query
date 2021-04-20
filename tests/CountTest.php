@@ -5,7 +5,7 @@ namespace Tests;
 use Illuminate\Validation\ValidationException;
 use Tests\Mock\FindQueries\FindFieldsQuery;
 
-class FindCountTest extends TestCase
+class CountTest extends TestCase
 {
     public function test_default()
     {

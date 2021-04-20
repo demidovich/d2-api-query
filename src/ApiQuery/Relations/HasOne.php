@@ -28,10 +28,27 @@ class HasOne implements RelationContract
     public function to($results, string $field): void
     {
         if ($this->isItem($results)) {
-            $results->$field = $this->relatedData;
-            return;
+            $this->toItem($results, $field);
+        } else {
+            $this->toCollection($results, $field);
         }
+    }
 
+    private function toItem($results, string $field): void
+    {
+        $lokalKeyName = $this->localKey;
+        $relatedByKey = $this->relatedData;
+        $key = $results->$lokalKeyName;
+
+        if (isset($relatedByKey[$key])) {
+            $results->$field = $relatedByKey[$key];
+        } else {
+            $this->nullableRelation($results, $field);
+        }
+    }
+
+    private function toCollection($results, string $field): void
+    {
         $lokalKeyName = $this->localKey;
         $relatedByKey = $this->relatedData;
 
