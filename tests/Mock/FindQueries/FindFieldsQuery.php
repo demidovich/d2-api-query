@@ -4,7 +4,7 @@ namespace Tests\Mock\FindQueries;
 
 use Tests\Mock\FindBaseQuery;
 
-class FindPersonQuery extends FindBaseQuery
+class FindFieldsQuery extends FindBaseQuery
 {
     protected ?string $table = "person";
     protected  string $primaryKey = "id";

@@ -3,8 +3,8 @@
 namespace Tests;
 
 use ReflectionClass;
-use Tests\Mock\FindQueries\FindPersonQuery;
-use Tests\Mock\FindQueries\FindPersonQueryConcept;
+use Tests\Mock\FindQueries\FindFieldsQuery;
+use Tests\Mock\FindQueries\FindFieldsQueryConcept;
 
 class DevTest extends TestCase
 {
