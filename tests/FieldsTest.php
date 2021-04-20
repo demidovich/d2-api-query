@@ -4,10 +4,19 @@ namespace Tests;
 
 use Illuminate\Validation\ValidationException;
 use Tests\Mock\FindQueries\FindFieldsQuery;
+use Tests\Mock\ReadQueries\ReadFieldsQuery;
 
-class FindFieldsTest extends TestCase
+class FieldsTest extends TestCase
 {
-    public function test_default()
+    public function test_item_default()
+    {
+        $results = $this->readQuery(ReadFieldsQuery::class, self::PERSON_ID);
+
+        $this->assertNotEmpty($results);
+        $this->assertEquals(3, count($results));
+    }
+
+    public function test_collection_default()
     {
         $results = $this->findQueryFirstItem(FindFieldsQuery::class);
 
@@ -15,7 +24,7 @@ class FindFieldsTest extends TestCase
         $this->assertEquals(3, count($results));
     }
 
-    public function test_select()
+    public function test_collection_specific_fields()
     {
         $results = $this->findQueryFirstItem(FindFieldsQuery::class, ["fields" => "id"]);
 
@@ -24,10 +33,17 @@ class FindFieldsTest extends TestCase
         $this->assertArrayHasKey("id", $results);
     }
 
+    public function test_collection_not_allowed_field_exception()
+    {
+        $this->expectException(ValidationException::class);
+
+        $this->findQueryItems(FindFieldsQuery::class, ["fields" => 'not_allowed_field']);
+    }
+
     /**
      * @dataProvider badParamProvider
      */
-    public function test_bad_param_exception($value)
+    public function test_collection_bad_field_exception($value)
     {
         $this->expectException(ValidationException::class);
 
