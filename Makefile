@@ -46,7 +46,7 @@ test-phpunit: ## Run phpunit tests
 	$(docker_compose_bin) exec fpm php /app/vendor/bin/phpunit
 
 test-coverage: ## Run phpunit coverage tests
-	$(docker_compose_bin) exec fpm php -dxdebug.mode=coverage -dextension=xdebug.so /app/vendor/bin/phpunit --colors=always --coverage-text --coverage-clover coverage.clover
+	$(docker_compose_bin) exec fpm php -dextension=xdebug.so -dxdebug.mode=coverage /app/vendor/bin/phpunit --colors=always --coverage-text --coverage-clover coverage.clover
 
 postgres: ## Shell of postgresql container
 	$(docker_compose_bin) exec --user root postgres /bin/bash
