@@ -10,7 +10,7 @@ use D2\ApiQuery\Contracts\RelationContract;
  *     address_city = Krasnodar
  *     address_street = Severnaya
  * 
- * new ItemJoinRelation($results, "address")
+ * new HasOnePrefix($results, "address")
  * 
  * results
  *     id = 1
@@ -18,7 +18,7 @@ use D2\ApiQuery\Contracts\RelationContract;
  *         city = Krasnodar
  *         street = Severnaya
  */
-class ItemJoinRelation implements RelationContract
+class HasOnePrefix implements RelationContract
 {
     public function to($results, string $field): void
     {

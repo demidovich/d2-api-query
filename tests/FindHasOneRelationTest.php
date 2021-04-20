@@ -8,7 +8,7 @@ class FindHasOneRelationTest extends TestCase
 {
     public function test_default()
     {
-        $results = $this->queryFirstItem(FindPersonHasOneQuery::class);
+        $results = $this->findQueryFirstItem(FindPersonHasOneQuery::class);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(2, count($results));
@@ -21,7 +21,7 @@ class FindHasOneRelationTest extends TestCase
             "fields" => "id,city", 
         ];
 
-        $results = $this->queryFirstItem(FindPersonHasOneQuery::class, $payload);
+        $results = $this->findQueryFirstItem(FindPersonHasOneQuery::class, $payload);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(2, count($results));
@@ -34,7 +34,7 @@ class FindHasOneRelationTest extends TestCase
             "fields" => "id", 
         ];
 
-        $results = $this->queryFirstItem(FindPersonHasOneQuery::class, $payload);
+        $results = $this->findQueryFirstItem(FindPersonHasOneQuery::class, $payload);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(1, count($results));

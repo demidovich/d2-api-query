@@ -8,7 +8,7 @@ class FindHasManyRelationTest extends TestCase
 {
     public function test_default()
     {
-        $results = $this->queryFirstItem(FindPersonHasManyQuery::class);
+        $results = $this->findQueryFirstItem(FindPersonHasManyQuery::class);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(2, count($results));
@@ -22,7 +22,7 @@ class FindHasManyRelationTest extends TestCase
             "fields" => "id,horse", 
         ];
 
-        $results = $this->queryFirstItem(FindPersonHasManyQuery::class, $payload);
+        $results = $this->findQueryFirstItem(FindPersonHasManyQuery::class, $payload);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(2, count($results));
@@ -35,7 +35,7 @@ class FindHasManyRelationTest extends TestCase
             "fields" => "id", 
         ];
 
-        $results = $this->queryFirstItem(FindPersonHasManyQuery::class, $payload);
+        $results = $this->findQueryFirstItem(FindPersonHasManyQuery::class, $payload);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(1, count($results));

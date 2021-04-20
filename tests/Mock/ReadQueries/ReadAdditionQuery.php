@@ -1,12 +1,13 @@
 <?php
 
-namespace Tests\Mock\FindQueries;
+namespace Tests\Mock\ReadQueries;
 
-use Tests\Mock\FindBaseQuery;
+use Tests\Mock\ReadBaseQuery;
 
-class FindPersonAdditionsQuery extends FindBaseQuery
+class ReadAdditionQuery extends ReadBaseQuery
 {
     protected ?string $table = "person";
+    protected  string $primaryKey = "id";
 
     protected array $allowedFields = [
         "id",

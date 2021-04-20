@@ -9,7 +9,7 @@ class FindFieldsTest extends TestCase
 {
     public function test_default()
     {
-        $results = $this->queryFirstItem(FindPersonQuery::class);
+        $results = $this->findQueryFirstItem(FindPersonQuery::class);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(3, count($results));
@@ -17,7 +17,7 @@ class FindFieldsTest extends TestCase
 
     public function test_select()
     {
-        $results = $this->queryFirstItem(FindPersonQuery::class, ["fields" => "id"]);
+        $results = $this->findQueryFirstItem(FindPersonQuery::class, ["fields" => "id"]);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(1, count($results));
@@ -31,7 +31,7 @@ class FindFieldsTest extends TestCase
     {
         $this->expectException(ValidationException::class);
 
-        $this->queryItems(FindPersonQuery::class, ["fields" => $value]);
+        $this->findQueryItems(FindPersonQuery::class, ["fields" => $value]);
     }
 
     public function badParamProvider()

@@ -6,9 +6,10 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\JoinClause;
 use Tests\Mock\FindBaseQuery;
 
-class FindPersonAdditionsJoinQuery extends FindBaseQuery
+class FindAdditionPrefixQuery extends FindBaseQuery
 {
     protected ?string $table = "person";
+    protected  string $primaryKey = "id";
 
     protected array $allowedFields = [
         "id",

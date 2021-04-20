@@ -2,7 +2,7 @@
 
 namespace D2\ApiQuery\Relations;
 
-class CollectionHasMany extends CollectionHasOne
+class HasMany extends HasOne
 {
     protected function relatedDataByKey($relatedData)
     {

@@ -10,7 +10,7 @@ class FindCountTest extends TestCase
     public function test_default()
     {
         $count   = $this->db()->table("person")->count();
-        $results = $this->queryItems(FindPersonQuery::class);
+        $results = $this->findQueryItems(FindPersonQuery::class);
 
         $this->assertEquals($count, count($results));
     }
@@ -18,14 +18,14 @@ class FindCountTest extends TestCase
     public function test_select_all()
     {
         $count   = $this->db()->table("person")->count();
-        $results = $this->queryItems(FindPersonQuery::class, ["count" => 0]);
+        $results = $this->findQueryItems(FindPersonQuery::class, ["count" => 0]);
 
         $this->assertEquals($count, count($results));
     }
 
     public function test_select_value()
     {
-        $results = $this->queryItems(FindPersonQuery::class, ["count" => 3]);
+        $results = $this->findQueryItems(FindPersonQuery::class, ["count" => 3]);
 
         $this->assertEquals(3, count($results));
     }
@@ -37,7 +37,7 @@ class FindCountTest extends TestCase
     {
         $this->expectException(ValidationException::class);
 
-        $this->queryItems(FindPersonQuery::class, ["count" => $value]);
+        $this->findQueryItems(FindPersonQuery::class, ["count" => $value]);
     }
 
     public function badParamProvider()

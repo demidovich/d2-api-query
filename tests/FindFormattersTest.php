@@ -8,7 +8,7 @@ class FindFormattersTest extends TestCase
 {
     public function test_default()
     {
-        $results = $this->queryFirstItem(FindPersonFormattersQuery::class);
+        $results = $this->findQueryFirstItem(FindPersonFormattersQuery::class);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(2, count($results));
@@ -20,7 +20,7 @@ class FindFormattersTest extends TestCase
 
     public function test_select()
     {
-        $results = $this->queryFirstItem(FindPersonFormattersQuery::class, ["fields" => "created_at"]);
+        $results = $this->findQueryFirstItem(FindPersonFormattersQuery::class, ["fields" => "created_at"]);
 
         $this->assertNotEmpty($results);
         $this->assertEquals(1, count($results));

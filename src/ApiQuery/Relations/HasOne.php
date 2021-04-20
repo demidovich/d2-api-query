@@ -3,13 +3,15 @@
 namespace D2\ApiQuery\Relations;
 
 use D2\ApiQuery\Contracts\RelationContract;
+use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Support\Collection;
 
-class CollectionHasOne implements RelationContract
+class HasOne implements RelationContract
 {
     protected $relatedData;
     protected $localKey;
     protected $relationKey;
+    protected bool $belongsToCollection;
 
     /**
      * @property Collection|array $relatedData
@@ -25,6 +27,11 @@ class CollectionHasOne implements RelationContract
 
     public function to($results, string $field): void
     {
+        if ($this->isItem($results)) {
+            $results->$field = $this->relatedData;
+            return;
+        }
+
         $lokalKeyName = $this->localKey;
         $relatedByKey = $this->relatedData;
 
@@ -67,5 +74,17 @@ class CollectionHasOne implements RelationContract
     protected function nullableRelation($item, $field): void
     {
         $item->$field = null;
+    }
+
+    protected function isItem($results): bool
+    {
+        return ! $this->isCollection($results);
+    }
+
+    protected function isCollection($results): bool
+    {
+        return $results instanceof Collection 
+            || $results instanceof Paginator 
+            || is_array($results);
     }
 }

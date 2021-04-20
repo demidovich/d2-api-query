@@ -5,12 +5,10 @@ namespace D2\ApiQuery;
 use D2\ApiQuery\Components\Fields;
 use D2\ApiQuery\Components\FieldsTrait;
 use D2\ApiQuery\Contracts\FormatterContract;
-use D2\ApiQuery\Contracts\RelationContract;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Validation\ValidationException;
-use PhpParser\Node\Expr\Instanceof_;
 
 abstract class ItemQuery
 {
@@ -69,6 +67,8 @@ abstract class ItemQuery
             );
         }
 
+        // Таблицы может не быть, если используется подзапрос
+
         else {
             $this->sql = Capsule::connection($this->sqlConnection);
             $this->sql->select(
@@ -122,7 +122,8 @@ abstract class ItemQuery
     private function makeItemRelations($item, array $relations): void
     {
         foreach ($relations as $field => $method) {
-            $this->$method($item)->to($item, $field);
+            $relation = $this->$method($item);
+            $relation->to($item, $field);
         }
     }
 
