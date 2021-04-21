@@ -6,8 +6,8 @@ use Tests\Mock\FindBaseQuery;
 
 class FindFieldsQuery extends FindBaseQuery
 {
-    protected ?string $table = "person";
-    protected  string $primaryKey = "id";
+    protected string $table = "person";
+    protected string $primaryKey = "id";
 
     protected array $allowedFields = [
         "id",

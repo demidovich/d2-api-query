@@ -24,6 +24,15 @@ class FieldsTest extends TestCase
         $this->assertEquals(3, count($results));
     }
 
+    public function test_item_specific_fields()
+    {
+        $results = $this->readQuery(ReadFieldsQuery::class, self::PERSON_ID, ["fields" => "id"]);
+
+        $this->assertNotEmpty($results);
+        $this->assertEquals(1, count($results));
+        $this->assertArrayHasKey("id", $results);
+    }
+
     public function test_collection_specific_fields()
     {
         $results = $this->findQueryFirstItem(FindFieldsQuery::class, ["fields" => "id"]);
@@ -33,11 +42,28 @@ class FieldsTest extends TestCase
         $this->assertArrayHasKey("id", $results);
     }
 
+    public function test_item_not_allowed_field_exception()
+    {
+        $this->expectException(ValidationException::class);
+
+        $this->readQuery(ReadFieldsQuery::class, self::PERSON_ID, ["fields" => 'not_allowed_field']);
+    }
+
     public function test_collection_not_allowed_field_exception()
     {
         $this->expectException(ValidationException::class);
 
         $this->findQueryItems(FindFieldsQuery::class, ["fields" => 'not_allowed_field']);
+    }
+
+    /**
+     * @dataProvider badParamProvider
+     */
+    public function test_item_bad_field_exception($value)
+    {
+        $this->expectException(ValidationException::class);
+
+        $this->readQuery(ReadFieldsQuery::class, self::PERSON_ID, ["fields" => $value]);
     }
 
     /**

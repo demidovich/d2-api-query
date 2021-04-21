@@ -15,7 +15,7 @@ abstract class ItemQuery
     use FieldsTrait;
 
     protected string  $sqlConnection;
-    protected ?string $table = null;
+    protected string  $table;
     protected string  $primaryKey;
     protected array   $allowedFields = [];
 
@@ -60,21 +60,10 @@ abstract class ItemQuery
 
     private function registerSqlFields(): void
     {
-        if ($this->table) {
-            $this->sql = Capsule::connection($this->sqlConnection)->table($this->table);
-            $this->sql->select(
-                $this->fields->toSql($this->table)
-            );
-        }
-
-        // Таблицы может не быть, если используется подзапрос
-
-        else {
-            $this->sql = Capsule::connection($this->sqlConnection);
-            $this->sql->select(
-                $this->fields->toSql()
-            );
-        }
+        $this->sql = Capsule::connection($this->sqlConnection)->table($this->table);
+        $this->sql->select(
+            $this->fields->toSql($this->table)
+        );
     }
 
     private function findItem($key): void

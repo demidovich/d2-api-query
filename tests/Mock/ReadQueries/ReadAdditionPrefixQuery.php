@@ -8,9 +8,10 @@ use Tests\Mock\ReadBaseQuery;
 
 class ReadAdditionPrefixQuery extends ReadBaseQuery
 {
-    protected ?string $table = "person";
-    protected string  $primaryKey = "id";
-    protected array   $allowedFields = [
+    protected string $table = "person";
+    protected string $primaryKey = "id";
+
+    protected array $allowedFields = [
         "id",
         "city" => "addition",
     ];

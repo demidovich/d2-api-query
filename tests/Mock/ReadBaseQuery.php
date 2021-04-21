@@ -22,13 +22,6 @@ class ReadBaseQuery extends ItemQuery
         return new Formatter();        
     }
 
-    // public static function fromRequest(Request $request): self
-    // {
-    //     $class = get_called_class();
-
-    //     return new $class($request);
-    // }
-
     public function sqlTable(string $table): Builder
     {
         return Capsule::connection($this->sqlConnection)->table($table);

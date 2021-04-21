@@ -15,7 +15,7 @@ class CountTest extends TestCase
         $this->assertEquals($count, count($results));
     }
 
-    public function test_select_all()
+    public function test_select_max()
     {
         $count   = $this->db()->table("person")->count();
         $results = $this->findQueryItems(FindFieldsQuery::class, ["count" => 0]);
@@ -30,24 +30,27 @@ class CountTest extends TestCase
         $this->assertEquals(3, count($results));
     }
 
-    /**
-     * @dataProvider badParamProvider
-     */
-    public function test_bad_param_exception($value)
+    public function test_max_value_exception()
     {
         $this->expectException(ValidationException::class);
 
-        $this->findQueryItems(FindFieldsQuery::class, ["count" => $value]);
+        $query = (new FindFieldsQuery(["count" => 4]));
+        $query->setMaxCount(3);
+
+        $query->results();
     }
 
-    public function badParamProvider()
+    public function test_bad_param_exception()
     {
-        return [
-            [25.1],
-            ["a"],
-            [",5"],
-            ["\\5"],
-            ["#5"],
-        ];
+        $this->expectException(ValidationException::class);
+
+        $this->findQueryItems(FindFieldsQuery::class, ["count" => "not_integer"]);
+    }
+
+    protected function query(array $input = []): array
+    {
+        $results = (new FindFieldsQuery($input));
+
+        return isset($results['data']) ? $results['data'] : $results;
     }
 }

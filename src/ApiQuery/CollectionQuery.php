@@ -45,13 +45,6 @@ abstract class CollectionQuery extends ItemQuery
         $this->boot($input);
     }
 
-    public static function fromArray(array $input, ...$params): self
-    {
-        $class = get_called_class();
-
-        return new $class($input, $params);
-    }
-
     /**
      * @return Collection|Paginator
      */
@@ -114,7 +107,7 @@ abstract class CollectionQuery extends ItemQuery
      * В этом случает проверка if ($this->filter) в любом случае завершится
      * неудачей.
      */
-    protected function hasRequestedFilter(string $name): bool
+    protected function hasInput(string $name): bool
     {
         return array_key_exists($name, $this->input);
     }

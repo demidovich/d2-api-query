@@ -9,8 +9,8 @@ use Tests\Mock\FindBaseQuery;
 
 class FindHasManyQuery extends FindBaseQuery
 {
-    protected ?string $table = "person";
-    protected  string $primaryKey = "id";
+    protected string $table = "person";
+    protected string $primaryKey = "id";
 
     protected array $allowedFields = [
         "id",
