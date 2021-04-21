@@ -2,6 +2,7 @@
 
 namespace D2\ApiQuery\Components;
 
+use Illuminate\Database\Query\Expression;
 use RuntimeException;
 
 class Fields
@@ -20,7 +21,7 @@ class Fields
         $results = [];
 
         foreach ($fields as $field => $rawSql) {
-            $results[] = $rawSql !== true ? "$rawSql as $field" : $prefix.$field;
+            $results[] = $rawSql !== true ? new Expression("$rawSql as $field") : $prefix.$field;
         }
 
         return $results;
@@ -107,7 +108,7 @@ class Fields
 
     private function addDependencies(string $field, string $options): void
     {
-        if (! preg_match("/^[a-z\d_]+(,[a-z\d_]+)*$/i", $options)) {
+        if (! preg_match("/^[a-z_]{1}([a-z\d_]*)(,[a-z_]{1}([a-z\d_]*))*$/i", $options)) {
             throw new RuntimeException(
                 sprintf('Некорректное значение параметра "depends" поля "%s".', $field)
             );

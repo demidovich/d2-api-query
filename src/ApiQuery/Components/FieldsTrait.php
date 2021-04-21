@@ -29,6 +29,7 @@ trait FieldsTrait
             foreach ($allowed as $field => $config) {
                 $fields->add($field, $config);
             }
+            $this->ensureCorrectFormatters($fields, $formatter);
             return $fields;
         }
 
