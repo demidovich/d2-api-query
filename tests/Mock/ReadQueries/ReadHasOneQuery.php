@@ -29,9 +29,4 @@ class ReadHasOneQuery extends ReadBaseQuery
 
         return new HasOne($relatedData, "city_id", "id");
     }
-
-    protected function before(Builder $sql): void
-    {
-        $sql->orderBy("id");
-    }
 }

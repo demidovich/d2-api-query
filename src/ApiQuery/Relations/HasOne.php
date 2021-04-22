@@ -80,22 +80,18 @@ class HasOne implements RelationContract
             return $results;
         }
 
-        if ($this->isItem($relatedData)) {
-            if (! isset($relatedData->$relationKey)) {
-                throw new RuntimeException("В relatedData отсутствует поле внешнего ключа.");
-            }
-            $results[$relatedData->$relationKey] = $relatedData;
-            return $results;
+        $first = $this->isItem($relatedData) ? $relatedData : $relatedData[0];
+
+        if (! isset($first->$relationKey)) {
+            throw new RuntimeException("В relatedData отсутствует поле внешнего ключа.");
         }
 
-        foreach ($relatedData as $row) {
-            if (empty($row->$relationKey)) {
-                continue;
+        if ($this->isItem($relatedData)) {
+            $results[$relatedData->$relationKey] = $relatedData;
+        } else {
+            foreach ($relatedData as $row) {
+                $results[$row->$relationKey] = $row;
             }
-            if (isset($results[$row->$relationKey])) {
-                continue;
-            }
-            $results[$row->$relationKey] = $row;
         }
 
         return $results;

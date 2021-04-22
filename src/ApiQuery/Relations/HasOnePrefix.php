@@ -23,14 +23,18 @@ class HasOnePrefix implements RelationContract
     public function to($results, string $field): void
     {
         $relation = new \stdClass();
+        $nullable = true;
 
         foreach ($results as $resultsField => $value) {
             if (preg_match("/^{$field}_(.+)$/", $resultsField, $match)) {
-                $relation->$match[1] = $value;
+                $relation->{$match[1]} = $value;
+                if ($value !== null) {
+                    $nullable = false;
+                }
                 unset($results->$resultsField);
             }
         }
 
-        $results->$field = $relation;
+        $results->$field = $nullable ? null : $relation;
     }
 }
