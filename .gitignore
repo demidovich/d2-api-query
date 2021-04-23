@@ -17,6 +17,6 @@ Thumbs.db
 
 /vendor
 /coverage
+/coverage.*
 /composer.lock
-/phpunit.xml
 .phpunit.result.cache

@@ -2,12 +2,13 @@
 
 cd "$(dirname "$0")"
 
-_path=$@
+TESTS_PATH=$@
+CONTAINER_ID=$(docker-compose -f docker-compose.yml ps -q fpm)
 
-# Меняем ./php на /app
+# Если есть путь к тестам, меняем ^.*tests на /app/tests
 
-if [ ! -z "$_path" ]; then
-    _path="/app${_path#./php}"
+if [ ! -z "$TESTS_PATH" ]; then
+    TESTS_PATH="/app/tests$(echo $TESTS_PATH | perl -pe 's/^.*tests//g')"
 fi
 
-docker-compose -f docker-compose.yml exec fpm /app/vendor/bin/phpunit $_path
+docker exec -ti $CONTAINER_ID /app/vendor/bin/phpunit --colors=always $TESTS_PATH

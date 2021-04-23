@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="3"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    phpVersion="7.4"
+    findUnusedVariablesAndParams="true"
+    findUnusedCode="true"
+    runTaintAnalysis="true"
+    checkForThrowsDocblock="true"
+>
+    <projectFiles>
+        <directory name="src" />
+    </projectFiles>
+</psalm>
+<!--
+    https://psalm.dev/docs/running_psalm/configuration/
+
+    parameter                           default
+
+    phpVersion                          string
+    autoloader                          string
+    useDocblockTypes                    true    использовать ли типы из docblock
+    useDocblockPropertyTypes            false
+    usePhpDocMethodsWithoutMagicCall    false
+    usePhpDocPropertiesWithoutMagicCall false
+    strictBinaryOperands                false   анализ строгой типизации для числовых и строковых операций
+    allowPhpStormGenerics               false
+    allowStringToStandInForClass        false
+    checkForThrowsDocblock              false   ругаться на отсутствие throws в docblock
+    checkForThrowsInGlobalScope         false   проверить, что перехвачены все исключения в глобальной области
+    findUnusedVariablesAndParams        false   найти все неиспользуемые переменные
+    findUnusedCode                      false   найти неиспользуемые участки кода
+    ensureArrayStringOffsetsExist       false   
+    skipChecksOnUnresolvableIncludes    false   удалит ошибки на неизвестные методы или классы, когда найдет их включение
+    runTaintAnalysis                    bool    поиск в коде вирусов
+-->
