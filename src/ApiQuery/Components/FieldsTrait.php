@@ -103,17 +103,18 @@ trait FieldsTrait
                 throw new RuntimeException("В {$class->getName()} отсутствует relation метод $methodName");
             }
 
-            $method = $class->getMethod($methodName);
-            if (!  $method->hasReturnType()
-                || $method->getReturnType()->allowsNull()
-                || ! class_implements($method->getReturnType()->getName(), RelationContract::class))
+            $returnType = $class->getMethod($methodName)->getReturnType();
+            if (!  $returnType
+                || $returnType->isBuiltin()
+                || $returnType->allowsNull()
+                || ! is_subclass_of($returnType->getName(), RelationContract::class))
             {
                 throw new RuntimeException(
                     "В {$class->getName()} метод $methodName не декларирует возвращаемый тип, реализующий " . RelationContract::class
                 );
             }
 
-            $this->relationMethods[$relation] = $method->getName();
+            $this->relationMethods[$relation] = $methodName;
         }
     }
 

@@ -74,7 +74,7 @@ abstract class ItemQuery
     }
 
     /**
-     * @return object
+     * @return null|object
      */
     public function results()
     {
@@ -94,21 +94,21 @@ abstract class ItemQuery
         return $item;
     }
 
-    protected function makeItemAdditions($item, array $methods): void
+    protected function makeItemAdditions(object $item, array $methods): void
     {
         foreach ($methods as $field => $method) {
             $item->$field = $this->$method($item);
         }
     }
 
-    protected function makeItemFormats($item, array $formatters): void
+    protected function makeItemFormats(object $item, array $formatters): void
     {
         foreach ($formatters as $field => $method) {
             $item->$field = $this->formatter()->format($method, $item->$field);
         }
     }
 
-    private function makeItemRelations($item, array $relations): void
+    private function makeItemRelations(object $item, array $relations): void
     {
         foreach ($relations as $field => $method) {
             $relation = $this->$method($item);
@@ -116,7 +116,7 @@ abstract class ItemQuery
         }
     }
 
-    protected function makeItemHiddens($item, array $fields): void
+    protected function makeItemHiddens(object $item, array $fields): void
     {
         foreach ($fields as $field) {
             unset($item->$field);

@@ -71,6 +71,10 @@ class HasOne implements RelationContract
         }
     }
 
+    /**
+      * @return array[]
+      * @psalm-return array<array-key, non-empty-list<mixed>>
+     */
     protected function relatedDataByKey($relatedData)
     {
         $results = [];
@@ -97,7 +101,7 @@ class HasOne implements RelationContract
         return $results;
     }
 
-    protected function nullableRelation($item, $field): void
+    protected function nullableRelation($item, string $field): void
     {
         $item->$field = null;
     }

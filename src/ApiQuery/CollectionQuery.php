@@ -2,8 +2,8 @@
 
 namespace D2\ApiQuery;
 
-use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -46,7 +46,7 @@ abstract class CollectionQuery extends ItemQuery
     }
 
     /**
-     * @return Collection|Paginator
+     * @return Paginator&static|Collection
      */
     public function results()
     {
@@ -67,15 +67,13 @@ abstract class CollectionQuery extends ItemQuery
         return $collection;
     }
 
-    /**
-     * @return Collection|Paginator
-     */
     private function limitedCollection(Builder $sql)
     {
         $input = $this->input;
 
         if (! array_key_exists('count', $input)) {
-            return $sql->simplePaginate($this->perPage)->appends($input);
+            $results = $sql->simplePaginate($this->perPage)->appends($input);
+            return $results;
         }
 
         $count = (int) $input['count'];
