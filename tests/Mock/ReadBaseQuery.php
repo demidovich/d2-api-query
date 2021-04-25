@@ -5,7 +5,7 @@ namespace Tests\Mock;
 use D2\ApiQuery\Contracts\FormatterContract;
 use D2\ApiQuery\ItemQuery;
 use Illuminate\Database\Capsule\Manager as Capsule;
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Connection;
 use Illuminate\Validation\Validator;
 
 class ReadBaseQuery extends ItemQuery
@@ -22,8 +22,8 @@ class ReadBaseQuery extends ItemQuery
         return new Formatter();        
     }
 
-    public function sqlTable(string $table): Builder
+    protected function sqlConnection(string $connection): Connection
     {
-        return Capsule::connection($this->sqlConnection)->table($table);
+        return Capsule::connection($connection);
     }
 }

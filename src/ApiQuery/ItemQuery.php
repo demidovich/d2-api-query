@@ -8,7 +8,6 @@ use Illuminate\Validation\ValidationException;
 
 abstract class ItemQuery extends BaseQuery
 {
-    protected string  $sqlConnection;
     protected string  $table;
     protected string  $primaryKey;
     protected array   $allowedFields = [];
