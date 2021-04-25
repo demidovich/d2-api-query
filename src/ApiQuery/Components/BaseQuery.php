@@ -5,7 +5,7 @@ namespace D2\ApiQuery\Components;
 use D2\ApiQuery\Contracts\FormatterContract;
 use D2\ApiQuery\Contracts\RelationContract;
 use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Database\Capsule\Manager as Capsule;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Validation\ValidationException;
 use ReflectionClass;
@@ -16,6 +16,7 @@ abstract class BaseQuery
 {
     use FieldsTrait;
 
+    protected string  $sqlConnection;
     protected Builder $sql;
     protected Fields  $fields;
     protected array   $input;
@@ -23,6 +24,17 @@ abstract class BaseQuery
     protected abstract function validator(array $input, array $rules): Validator;
 
     protected abstract function formatter(): FormatterContract;
+
+    protected abstract function sqlConnection(string $connection): Connection;
+
+    public function sqlTable(string $table, ?string $connection = null): Builder
+    {
+        if (! $connection) {
+            $connection = $this->sqlConnection;
+        }
+
+        return $this->sqlConnection($connection)->table($table);
+    }
 
     protected function boot(array $input): void
     {
@@ -37,7 +49,7 @@ abstract class BaseQuery
         $this->registerAdditions($this->fields);
         $this->registerRelations($this->fields);
 
-        $this->sql = Capsule::connection($this->sqlConnection)->table($this->table);
+        $this->sql = $this->sqlTable($this->table, $this->sqlConnection);
         $this->sql->select(
             $this->fields->toSql($this->table)
         );
