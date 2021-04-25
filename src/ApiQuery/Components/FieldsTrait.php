@@ -3,8 +3,6 @@
 namespace D2\ApiQuery\Components;
 
 use D2\ApiQuery\Contracts\FormatterContract;
-use D2\ApiQuery\Contracts\RelationContract;
-use ReflectionClass;
 use RuntimeException;
 
 trait FieldsTrait
@@ -12,7 +10,7 @@ trait FieldsTrait
     private array $additionMethods = [];
     private array $relationMethods = [];
 
-    private function fieldsInstance(array $allowedRaw, FormatterContract $formatter, array $input): Fields
+    protected function fieldsInstance(array $allowedRaw, FormatterContract $formatter, array $input): Fields
     {
         $fields = new Fields();
 
@@ -72,49 +70,6 @@ trait FieldsTrait
                     throw new RuntimeException("В $class для поля $field указан несуществующий format метод $method."); 
                 }
             }
-        }
-    }
-
-    protected function registerAdditions(Fields $fields): void
-    {
-        foreach ($fields->additions() as $addition) {
-            $method = $this->camelCase($addition) . 'Addition';
-            if (! method_exists($this, $method)) {
-                $class = get_called_class();
-                throw new RuntimeException("В $class отсутствует addition метод $method");
-            }
-            $this->additionMethods[$addition] = $method;
-        }
-    }
-
-    protected function registerRelations(Fields $fields): void
-    {
-        $relations = $fields->relations();
-        if (! $relations) {
-            return;
-        }
-
-        $class = new ReflectionClass($this);
-
-        foreach ($fields->relations() as $relation) {
-
-            $methodName = $this->camelCase($relation) . 'Relation';
-            if (! $class->hasMethod($methodName)) {
-                throw new RuntimeException("В {$class->getName()} отсутствует relation метод $methodName");
-            }
-
-            $returnType = $class->getMethod($methodName)->getReturnType();
-            if (!  $returnType
-                || $returnType->isBuiltin()
-                || $returnType->allowsNull()
-                || ! is_subclass_of($returnType->getName(), RelationContract::class))
-            {
-                throw new RuntimeException(
-                    "В {$class->getName()} метод $methodName не декларирует возвращаемый тип, реализующий " . RelationContract::class
-                );
-            }
-
-            $this->relationMethods[$relation] = $methodName;
         }
     }
 

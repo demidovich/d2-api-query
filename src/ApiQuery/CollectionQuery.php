@@ -2,6 +2,7 @@
 
 namespace D2\ApiQuery;
 
+use D2\ApiQuery\Components\BaseQuery;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
@@ -17,11 +18,16 @@ use Illuminate\Validation\ValidationException;
  *     'created_at' => 'sql:to_json(created_at)'
  * ]
  */
-abstract class CollectionQuery extends ItemQuery
+abstract class CollectionQuery extends BaseQuery
 {
-    protected array $rules    = [];
-    protected int   $maxCount = 1000;
-    protected int   $perPage  = 25;
+    protected string  $sqlConnection;
+    protected string  $table;
+    protected string  $primaryKey;
+    protected array   $allowedFields = [];
+
+    protected array   $rules    = [];
+    protected int     $maxCount = 1000;
+    protected int     $perPage  = 25;
 
     public function __construct(array $input, ...$params)
     {
@@ -192,5 +198,18 @@ abstract class CollectionQuery extends ItemQuery
     protected function rules(): array
     {
         return $this->rules;
+    }
+
+    protected function before(Builder $sql): void
+    {
+
+    }
+
+    /**
+     * @property Collection|Paginator
+     */
+    protected function after($results): void
+    {
+
     }
 }
