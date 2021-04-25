@@ -2,8 +2,9 @@
 
 namespace D2\ApiQuery;
 
-use Illuminate\Contracts\Pagination\Paginator;
+use D2\ApiQuery\Components\BaseQuery;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -17,11 +18,16 @@ use Illuminate\Validation\ValidationException;
  *     'created_at' => 'sql:to_json(created_at)'
  * ]
  */
-abstract class CollectionQuery extends ItemQuery
+abstract class CollectionQuery extends BaseQuery
 {
-    protected array $rules    = [];
-    protected int   $maxCount = 1000;
-    protected int   $perPage  = 25;
+    protected string  $sqlConnection;
+    protected string  $table;
+    protected string  $primaryKey;
+    protected array   $allowedFields = [];
+
+    protected array   $rules    = [];
+    protected int     $maxCount = 1000;
+    protected int     $perPage  = 25;
 
     public function __construct(array $input, ...$params)
     {
@@ -46,7 +52,7 @@ abstract class CollectionQuery extends ItemQuery
     }
 
     /**
-     * @return Collection|Paginator
+     * @return Paginator&static|Collection
      */
     public function results()
     {
@@ -67,15 +73,13 @@ abstract class CollectionQuery extends ItemQuery
         return $collection;
     }
 
-    /**
-     * @return Collection|Paginator
-     */
     private function limitedCollection(Builder $sql)
     {
         $input = $this->input;
 
         if (! array_key_exists('count', $input)) {
-            return $sql->simplePaginate($this->perPage)->appends($input);
+            $results = $sql->simplePaginate($this->perPage)->appends($input);
+            return $results;
         }
 
         $count = (int) $input['count'];
@@ -194,5 +198,18 @@ abstract class CollectionQuery extends ItemQuery
     protected function rules(): array
     {
         return $this->rules;
+    }
+
+    protected function before(Builder $sql): void
+    {
+
+    }
+
+    /**
+     * @property Collection|Paginator
+     */
+    protected function after($results): void
+    {
+
     }
 }

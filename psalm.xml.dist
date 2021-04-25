@@ -1,15 +1,13 @@
 <?xml version="1.0"?>
 <psalm
-    errorLevel="3"
     resolveFromConfigFile="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
     xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
     phpVersion="7.4"
-    findUnusedVariablesAndParams="true"
-    findUnusedCode="true"
-    runTaintAnalysis="true"
-    checkForThrowsDocblock="true"
+    findUnusedCode="false"
+    findUnusedVariablesAndParams="false"
+    errorLevel="3"
 >
     <projectFiles>
         <directory name="src" />
@@ -18,8 +16,11 @@
 <!--
     https://psalm.dev/docs/running_psalm/configuration/
 
+    errorLevel="3"
+
     parameter                           default
 
+    errorLevel                          false
     phpVersion                          string
     autoloader                          string
     useDocblockTypes                    true    использовать ли типы из docblock

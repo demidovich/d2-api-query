@@ -2,32 +2,16 @@
 
 namespace D2\ApiQuery;
 
-use D2\ApiQuery\Components\Fields;
-use D2\ApiQuery\Components\FieldsTrait;
-use D2\ApiQuery\Contracts\FormatterContract;
-use Illuminate\Contracts\Validation\Validator;
+use D2\ApiQuery\Components\BaseQuery;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Validation\ValidationException;
 
-abstract class ItemQuery
+abstract class ItemQuery extends BaseQuery
 {
-    use FieldsTrait;
-
     protected string  $sqlConnection;
     protected string  $table;
     protected string  $primaryKey;
     protected array   $allowedFields = [];
-
-    protected Builder $sql;
-    protected Fields  $fields;
-    protected array   $input;
-
-    private $key;
-
-    protected abstract function validator(array $input, array $rules): Validator;
-
-    protected abstract function formatter(): FormatterContract;
 
     public function __construct($key, array $input, ...$params)
     {
@@ -40,33 +24,10 @@ abstract class ItemQuery
         }
 
         $this->boot($validator->validated());
-        $this->findItem($key);
+        $this->sqlFind($key);
     }
 
-    protected function boot(array $input): void
-    {
-        $this->input = $input;
-
-        $this->fields = $this->fieldsInstance(
-            $this->allowedFields, 
-            $this->formatter(),
-            $this->input
-        );
-
-        $this->registerAdditions($this->fields);
-        $this->registerRelations($this->fields);
-        $this->registerSqlFields();
-    }
-
-    private function registerSqlFields(): void
-    {
-        $this->sql = Capsule::connection($this->sqlConnection)->table($this->table);
-        $this->sql->select(
-            $this->fields->toSql($this->table)
-        );
-    }
-
-    private function findItem($key): void
+    private function sqlFind($key): void
     {
         $prefix = $this->table ? "{$this->table}." : "";
 
@@ -74,7 +35,7 @@ abstract class ItemQuery
     }
 
     /**
-     * @return object
+     * @return null|object
      */
     public function results()
     {
@@ -94,21 +55,7 @@ abstract class ItemQuery
         return $item;
     }
 
-    protected function makeItemAdditions($item, array $methods): void
-    {
-        foreach ($methods as $field => $method) {
-            $item->$field = $this->$method($item);
-        }
-    }
-
-    protected function makeItemFormats($item, array $formatters): void
-    {
-        foreach ($formatters as $field => $method) {
-            $item->$field = $this->formatter()->format($method, $item->$field);
-        }
-    }
-
-    private function makeItemRelations($item, array $relations): void
+    private function makeItemRelations(object $item, array $relations): void
     {
         foreach ($relations as $field => $method) {
             $relation = $this->$method($item);
@@ -116,56 +63,13 @@ abstract class ItemQuery
         }
     }
 
-    protected function makeItemHiddens($item, array $fields): void
-    {
-        foreach ($fields as $field) {
-            unset($item->$field);
-        }
-    }
-
-    public function sql(): Builder
-    {
-        return $this->sql;
-    }
-
-    public function fields(): Fields
-    {
-        return $this->fields;
-    }
-
     protected function before(Builder $sql): void
     {
 
     }
 
-    protected function after($results): void
+    protected function after(object $results): void
     {
 
-    }
-
-    /**
-     * Были ли запрошено поле в параметре запроса fields.
-     */
-    protected function hasRequestedField(string $name): bool
-    {
-        return $this->fields->has($name);
-    }
-
-    protected function paramException(string $param, string $message): void
-    {
-        $validator = $this->validator([], []);
-        $validator->getMessageBag()->add($param, $message);
-
-        throw new ValidationException($validator);
-    }
-
-    public function __get($name)
-    {
-        return $this->input[$name];
-    }
-
-    public function __isset($name)
-    {
-        return isset($this->input[$name]);
     }
 }
