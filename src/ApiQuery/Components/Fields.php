@@ -30,6 +30,7 @@ class Fields
     /**
      * fullname   => addition|depends:first_name,last_name
      * fullname   => sql:first_name || ' ' || last_name
+     * address    => sql:meta->>'address'|format:json_decode
      * created_at => sql:to_json(created_at)
      * updated_at => format:json_date
      * city       => relation|depends:city_id
@@ -41,8 +42,11 @@ class Fields
             return;
         }
 
-        $config   = preg_replace("/([a-z\d]{1})\s*\|\s*([a-z\d]{1})/i", "\\1~~~\\2", $config);
-        $segments = explode("~~~", $config);
+        // Split string by pipe char
+        // Skip SQL expression || and @|
+
+        $prepared = preg_replace("/([^|@]{1})\s*\|\s*([^|@]{1})/", "\\1~~~\\2", $config);
+        $segments = explode("~~~", $prepared);
 
         foreach ($segments as $segment) {
 
