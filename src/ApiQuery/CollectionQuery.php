@@ -3,6 +3,7 @@
 namespace D2\ApiQuery;
 
 use D2\ApiQuery\Components\BaseQuery;
+use D2\ApiQuery\Components\SortTrait;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
@@ -20,6 +21,8 @@ use Illuminate\Validation\ValidationException;
  */
 abstract class CollectionQuery extends BaseQuery
 {
+    use SortTrait;
+
     protected string  $sqlConnection;
     protected string  $table;
     protected string  $primaryKey;
@@ -36,10 +39,20 @@ abstract class CollectionQuery extends BaseQuery
           //'with'   => 'nullable|array',
           //'with.*' => 'required|regex:/^[a-z\d_]+$/',
           //'with.*' => 'required|regex:/^[a-z\d_]+(?:,[a-z\d_]+)*$/', // with[relation]=field1,field2
-            'sort'   => 'nullable|array',
-            'sort.*' => 'in:asc,desc',
             'count'  => 'nullable|int',
             'page'   => 'nullable|int',
+            'sort.*' => 'required|in:asc,desc',
+            'sort'   => [
+                'nullable',
+                'array',
+                function ($attribute, $value, $fail) {
+                    foreach ($value as $field => $direction) {
+                        if (! preg_match("/^[a-z_]{1}[a-z\d_]*$/i", $field)) {
+                            $fail("The $attribute has invalid field name $field.");
+                        }
+                    }
+                }
+            ]
         ] + $this->rules();
 
         $validator = $this->validator($input, $rules);
