@@ -15,6 +15,9 @@ class AdditionPrefixTest extends TestCase
         $this->assertEquals(2, count($results));
         $this->assertArrayHasKey("id", $results);
         $this->assertTrue(isset($results["city"]["id"]));
+
+        // Autohide joined fields
+        $this->assertFalse(isset($item["city_id"]));
     }
 
     public function test_collection()
@@ -25,5 +28,8 @@ class AdditionPrefixTest extends TestCase
         $this->assertEquals(2, count($results));
         $this->assertArrayHasKey("id", $results);
         $this->assertTrue(isset($results["city"]["id"]));
+
+        // Autohide joined fields
+        $this->assertFalse(isset($item["city_id"]));
     }
 }
