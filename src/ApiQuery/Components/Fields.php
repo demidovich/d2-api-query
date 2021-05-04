@@ -12,7 +12,6 @@ class Fields
     private array  $additions    = [];
     private array  $relations    = [];
     private array  $dependencies = [];
-    private array  $hidden       = [];
 
     public function toSql(?string $table = null): array
     {
@@ -129,32 +128,19 @@ class Fields
     }
 
     /**
-     * @property mixed $field
+     * Determine the fields to be hidden.
+     *
+     * @param object $rawItem Raw object from storage.
+     * @return array
      */
-    public function hide($field): void
+    public function hidden($rawItem): array
     {
-        if (is_array($field)) {
-            foreach ($field as $f) {
-                $this->hidden[$f] = $f;
-            }
-        } else {
-            $this->hidden[$field] = $field;
-        }
-    }
+        $allFields = array_keys((array) $rawItem);
 
-    public function hidden(): array
-    {
-        $hidden = $this->hidden;
-
-        if ($this->dependencies) {
-            foreach ($this->dependencies as $k => $v) {
-                if (! isset($this->sql[$k])) {
-                    $hidden[$k] = true;
-                }
-            }
-        }
-
-        return $hidden ? array_keys($hidden) : [];
+        return array_diff(
+            $allFields,
+            $this->visibled()
+        );
     }
 
     public function additions(): array
@@ -183,10 +169,10 @@ class Fields
     }
 
     /**
-     * Get the added fields.
+     * Get the visibled fields.
      * Does not include dependent fields.
      */
-    public function added(): array
+    public function visibled(): array
     {
         return array_keys(
             array_merge(

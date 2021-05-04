@@ -135,9 +135,9 @@ abstract class BaseQuery
         }
     }
 
-    protected function makeItemHiddens(object $item, array $fields): void
+    protected function makeItemHiddens(object $item, array $hiddenFields): void
     {
-        foreach ($fields as $field) {
+        foreach ($hiddenFields as $field) {
             unset($item->$field);
         }
     }

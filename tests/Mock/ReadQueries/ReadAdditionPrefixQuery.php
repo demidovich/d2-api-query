@@ -48,9 +48,9 @@ class ReadAdditionPrefixQuery extends ReadBaseQuery
             "city.name as city_name",
         ]);
 
-        $this->fields()->hide([
-            "city_id", 
-            "city_name",
-        ]);
+        // $this->fields()->hide([
+        //     "city_id", 
+        //     "city_name",
+        // ]);
     }
 }
