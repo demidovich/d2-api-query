@@ -172,10 +172,28 @@ class Fields
         return $this->formats;
     }
 
+    /**
+     * Determine if a given field name was addedd.
+     */
     public function has(string $field): bool
     {
         return isset($this->additions[$field]) 
             || isset($this->relations[$field]) 
             || isset($this->sql[$field]);
+    }
+
+    /**
+     * Get the added fields.
+     * Does not include dependent fields.
+     */
+    public function added(): array
+    {
+        return array_keys(
+            array_merge(
+                $this->sql,
+                $this->additions,
+                $this->relations
+            )
+        );
     }
 }
