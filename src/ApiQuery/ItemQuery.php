@@ -48,7 +48,11 @@ abstract class ItemQuery extends BaseQuery
             $this->makeItemFormats($item, $fields->formats());
             $this->after($item);
             $this->makeItemRelations($item, $this->relationMethods());
-            $this->makeItemHiddens($item, $fields->hidden());
+
+            $hiddenFields = $this->fields->hidden($item);
+            if ($hiddenFields) {
+                $this->makeItemHiddens($item, $hiddenFields);
+            }
         }
 
         return $item;

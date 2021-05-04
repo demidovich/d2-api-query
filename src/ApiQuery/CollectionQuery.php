@@ -185,14 +185,14 @@ abstract class CollectionQuery extends BaseQuery
      */
     protected function makeCollectionHiddens($results): void
     {
-        $hidden = $this->fields->hidden();
+        $hiddenFields = $this->fields->hidden($results[0]);
 
-        if (! $hidden) {
+        if (! $hiddenFields) {
             return;
         }
 
         foreach ($results as $item) {
-            $this->makeItemHiddens($item, $hidden);
+            $this->makeItemHiddens($item, $hiddenFields);
         }
     }
 
