@@ -26,7 +26,7 @@ abstract class ItemQuery extends BaseQuery
         $this->sqlFind($key);
     }
 
-    private function sqlFind($key): void
+    protected function sqlFind($key): void
     {
         $prefix = $this->table ? "{$this->table}." : "";
 
