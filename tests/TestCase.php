@@ -10,6 +10,8 @@ class TestCase extends BaseTestCase
 {
     const PERSON_ID = 1;
     const PERSON_ID_WITHOUT_CITY = 5;
+    const PERSON_FIRST_NAME = "Jon";
+    const PERSON_LAST_NAME = "Snow";
 
     protected function setUp(): void
     {
@@ -36,7 +38,7 @@ class TestCase extends BaseTestCase
         return Capsule::connection("default");
     }
 
-    protected function readQuery(string $query, int $key, array $input = []): array
+    protected function readQuery(string $query, $key, array $input = []): array
     {
         $results = (new $query($key, $input))->results();
 
