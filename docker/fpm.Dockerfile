@@ -1,10 +1,10 @@
-FROM demidovich/php-fpm:7.4-alpine
+FROM demidovich/php-fpm:8.1-alpine
 
 ARG UID=82
 ARG GID=82
 ENV UID=${UID:-82} \
     GID=${GID:-82} \
-    PHP_COMPOSER_VERSION=2.0.9
+    PHP_COMPOSER_VERSION=2.3.3
 
 RUN set -eux; \
     if [ $UID -ne 82 ]; then \
